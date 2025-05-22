@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: transparent !important;
+        }
+
+        #word-cloud {
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 0px;
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            /* Sabitleme */
+            top: 10px;
+            /* Üstten 22px mesafe */
+            right: 10px;
+            /* Sağdan 20px mesafe */
+            overflow: hidden;
+            display: none;
+            /* Görünürlüğü kontrol edebilirsin */
+            z-index: 1;
+            background-color: #638DB6;
+        }
+
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            position: absolute;
+            top: 620px;
+            right: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            position: absolute;
+            top: 22px;
+            right: 10px;
+        }
+
+        .visual-item {
+            width: 50%;
+            height: 180px;
+            background-color: #f0f0f0;
+            margin-bottom: 20px;
+            text-align: center;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .visual-item img {
+            max-width: 80%;
+            max-height: 80%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        #visual-knowledge {
+            font-family: "Segoe UI", sans-serif;
+            padding: 10px;
+            width: 32vw;
+            height: 85vh;
+            position: absolute;
+            top: 15px;
+            right: 10px;
+            display: none;
+            /* Bu, initially gizli olduğu için doğru ayar. */
+            z-index: 999;
+            text-align: center;
+            overflow-y: auto;
+            /* Burayı scroll yerine auto yaparak taşma durumunda scrollbar görünmesini sağlıyoruz */
+            scrollbar-width: thin;
+            scrollbar-color: #688cbc #f0f0f0;
+        }
+
+        /* Chrome, Edge ve Safari için scrollbar özelleştirme */
+        .visual-knowledge::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .visual-knowledge::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+
+        .visual-knowledge::-webkit-scrollbar-thumb {
+            background: #688cbc;
+            border-radius: 4px;
+        }
+
+        .visual-knowledge::-webkit-scrollbar-thumb:hover {
+            background: #5a7ca6;
+        }
+
+
+        /* Gallery Container */
+        .gallery {
+            border: 1px solid #005599;
+            padding: 20px;
+            width: 15vw;
+            height: 40vh;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            overflow: auto;
+            display: none;
+            background-color: #638DB6;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .gallery img {
+            max-width: 200%;
+            max-height: 200%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-top: 20px;
+        }
+
+        .visual-item h3 {
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #iframe-container {
+            padding: 0px;
+            width: 30vw;
+            height: 88.5vh;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: block;
+            transform-origin: bottom left;
+            border: 1px solid #005599;
+        }
+
+        #resize-handler {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(19, 95, 182, 0.7);
+            cursor: nwse-resize;
+            border-radius: 0px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        #resize-handler:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+            transform: scale(1.2);
+        }
+
+        #configurational {
+            padding: 0px;
+            width: 80vw;
+            height: 100vh;
+            position: absolute;
+            top: 26px;
+            right: 10px;
+            display: none;
+            resize: both;
+        }
+
+        .sunburst-container {
+            width: 50%;
+            height: 50%;
+            margin-left: 1%;
+            text-overflow: ellipsis;
+            font-family: "Segoe UI", sans-serif;
+            z-index: 1000;
+            display: flex;
+            /* Eğer bir düzenleme varsa */
+            flex-direction: column;
+            /* Elemanları dikey hizala */
+            gap: 20px;
+            /* İç elemanlar arasındaki boşluk */
+        }
+
+        .visual-container {
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 0;
+            width: 30vw;
+            height: 62vh;
+            position: absolute;
+            top: 30px;
+            right: 10px;
+            overflow: hidden;
+            display: none;
+            z-index: 1;
+            background-color: #638DB6;
+        }
+
+        /* Menü öğesinin köşeli olmasını sağlamak için */
+        .dropdown-menu {
+            border-radius: 0px;
+            /* Köşeleri düz yapar (kendi tercihinize göre değiştirebilirsiniz) */
+            border: 1px solid #ccc;
+            /* Kenarlık eklemek için */
+        }
+
+        /* Menü öğelerinin de köşeli görünmesi için */
+        .dropdown-item {
+            border-radius: 0px;
+            /* Menü öğelerinin köşeleri düz olur */
+        }
+
+        /* Menü üzerine geldiğinde değişiklik yapabilirsiniz */
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            /* Hover rengini değiştirmek için */
+            border-radius: 0px;
+            /* Hover durumunda da köşeleri düz tutuyoruz */
+        }
+
+        .nav-item.dropdown {
+            position: absolute;
+            top: 630px;
+            right: 10px;
+            display: none;
+            border-radius: 0px;
+        }
+
+        /* Personalize metni ve ikon rengi */
+        #navbarDropdown {
+            color: #005599;
+            /* Personalize metni ve ikon için renk */
+            border-radius: 0px;
+        }
+
+        #navbarDropdown i {
+            color: #005599;
+            /* İkon rengi */
+        }
+
+        /* Ekranın sağ tarafına hizalamak için ml-auto kullanın */
+        .ml-auto {
+            margin-left: auto !important;
+        }
+
+        /* Dropdown menüsünün yukarıya açılmasını sağlamak */
+        .dropdown-menu-up {
+            top: auto;
+            bottom: 100%;
+            transform: translateY(-5px);
+            /* İsteğe bağlı, küçük bir boşluk ekler */
+        }
+
+        #customTooltip {
+            position: absolute;
+            display: none;
+            background-color: rgba(0, 85, 153, 0.9);
+            /* Slightly more opaque */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 0px;
+            font-size: 12px;
+            font-family: "Segoe UI", sans-serif;
+            pointer-events: none;
+            /* Crucial */
+            z-index: 1100;
+            max-width: 250px;
+            white-space: normal;
+            border: 1px solid #eee;
+            /* Optional border */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sunburst-container" id="sunburst-chart"></div>
+    <div id="word-cloud"></div>
+    <div id="flowchart"></div>
+    <div id="tree-container"></div>
+    <div id="visual-container" class="visual-container"></div>
+    <div id="visual-knowledge">
+        <div id="gallery"></div>
+    </div>
+    <div id="customTooltip" style="position: absolute; display: none; pointer-events: none;" class="p-2 rounded shadow">
+    </div>
+
+    <!-- Iframe container -->
+    <div id="iframe-container" style="display: none;">
+        <div id="resize-handler"></div>
+        <iframe id="collaborative-iframe" style="display: none;" width="100%" height="620px"></iframe>
+        <iframe id="arobot-iframe" style="display: none;" width="100%" height="620px"></iframe>
+        <iframe id="adaptive-iframe" style="display: none;" width="100%" height="620px"></iframe>
+    </div>
+
+    <div id="configurational" style="display: none;">
+        <iframe id="collaborative-iframe2" style="display: none;" width="100%" height="630px"></iframe>
+        <iframe id="arobot-iframe2" style="display: none;" width="100%" height="630px"></iframe>
+        <iframe id="adaptive-iframe2" style="display: none;" width="100%" height="630px"></iframe>
+    </div>
+
+    <div id="gallery" style="display: none;">
+        <iframe id="collaborative-iframe3" style="display: none;" width="100%" height="630px"></iframe>
+        <iframe id="arobot-iframe3" style="display: none;" width="100%" height="630px"></iframe>
+        <iframe id="adaptive-iframe3" style="display: none;" width="100%" height="630px"></iframe>
+    </div>
+
+    <ul class="nav ml-auto">
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+                aria-expanded="false">
+                <i class="fas fa-edit"></i> Personalize
+            </a>
+            <ul class="dropdown-menu dropdown-menu-up" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="#">Download</a></li>
+                <li><a class="dropdown-item" href="#">Add a Feature</a></li>
+                <li><a class="dropdown-item" href="#">Add to Favorites</a></li>
+            </ul>
+        </li>
+    </ul>
+
+    <script>
+        var dropdown = document.getElementById('navbarDropdown');
+        dropdown.addEventListener('click', function (event) {
+            var menu = dropdown.nextElementSibling;
+            menu.classList.toggle('show');
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+            function showPersonalizeButton() {
+                const personalizeButton = document.querySelector('.nav-item.dropdown');
+                personalizeButton.style.display = 'block'; // Butonu görünür yap
+            }
+
+            // İlgili iframe'leri göstermek için fonksiyonlar
+            function showIframeWithCollaborativeFC() {
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('collaborative-iframe');
+                const allIframes = iframeContainer.querySelectorAll('iframe');
+
+                // Tüm iframe'leri gizle
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                // İlgili iframe'i göster
+                iframe.style.display = 'block';
+                iframe.src = 'collaborative-flowchart.html';
+                iframeContainer.style.display = 'block';
+                showPersonalizeButton();
+
+            }
+
+            function showIframeWithArobotFC() {
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('arobot-iframe');
+                const allIframes = iframeContainer.querySelectorAll('iframe');
+
+                // Tüm iframe'leri gizle
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                // İlgili iframe'i göster
+                iframe.style.display = 'block';
+                iframe.src = 'arobot-flowchart.html';
+                iframeContainer.style.display = 'block';
+                showPersonalizeButton();
+
+            }
+
+            function showIframeWithAdaptiveFC() {
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('adaptive-iframe');
+                const allIframes = iframeContainer.querySelectorAll('iframe');
+
+                // Tüm iframe'leri gizle
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                // İlgili iframe'i göster
+                iframe.style.display = 'block';
+                iframe.src = 'adaptive-flowchart.html';
+                iframeContainer.style.display = 'block';
+                showPersonalizeButton();
+
+            }
+
+            // iframe'leri gizleme
+            function hideIframe() {
+                const iframeContainer = document.getElementById('iframe-container');
+                iframeContainer.style.display = 'none'; // iframe'i gizliyoruz  
+            }
+            function clearWordCloud() {
+                document.getElementById("word-cloud").innerHTML = ""; // Wordcloud'u temizle
+                document.getElementById("word-cloud").style.display = "none"; // Gizle
+            }
+            function clearFlowchart() {
+                document.getElementById("flowchart").innerHTML = ""; // Akış şemasını temizle
+                document.getElementById("flowchart").style.display = "none"; // Gizle
+            }
+            function clearVisuals() {
+                document.getElementById('visual-container').innerHTML = '';
+                document.getElementById("visual-container").style.display = "none"; // Gizle
+            }
+            function clearVisualKnowledge() {
+                document.getElementById('visual-knowledge').innerHTML = '';
+                document.getElementById("visual-knowledge").style.display = "none"; // Gizle
+            }
+            function clearImage() {
+                document.getElementById('gallery').innerHTML = '';
+                document.getElementById("gallery").style.display = "none"; // Gizle
+            }
+            function clearGallery() {
+                document.getElementById('gallery').innerHTML = '';
+                document.getElementById("gallery").style.display = "none"; // Gizle
+            }
+            function clearConfigurational() {
+                document.getElementById('configurational').innerHTML = '';
+                document.getElementById("configurational").style.display = "none"; // Gizle
+            }
+            function hidePersonalizeButton() {
+                const personalizeButton = document.querySelector('.nav-item.dropdown');
+                personalizeButton.style.display = 'none'; // Butonu gizle
+            }
+
+            function showIframeWithCollaborativeIF() {
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('collaborative-iframe');
+                const allIframes = iframeContainer.querySelectorAll('iframe');
+
+                // Tüm iframe'leri gizle
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                // İlgili iframe'i göster
+                iframe.style.display = 'block';
+                iframe.src = 'collaborative-configurational.html';
+                iframeContainer.style.display = 'block';
+                showPersonalizeButton();
+            }
+
+            function showIframeWithArobotIF() {
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('arobot-iframe');
+                const allIframes = iframeContainer.querySelectorAll('iframe');
+
+                // Tüm iframe'leri gizle
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                // İlgili iframe'i göster
+                iframe.style.display = 'block';
+                iframe.src = 'arobot-configurational.html';
+                iframeContainer.style.display = 'block';
+                showPersonalizeButton();
+            }
+
+            function showIframeWithAdaptiveIF() {
+                const iframeContainer = document.getElementById('iframe-container');
+                const iframe = document.getElementById('adaptive-iframe');
+                const allIframes = iframeContainer.querySelectorAll('iframe');
+
+                // Tüm iframe'leri gizle
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                // İlgili iframe'i göster
+                iframe.style.display = 'block';
+                iframe.src = 'adaptive-configurational.html';
+                iframeContainer.style.display = 'block';
+                showPersonalizeButton();
+            }
+
+            function hideIframe() {
+                const iframeContainer = document.getElementById('iframe-container');
+                iframeContainer.style.display = 'none';
+            }
+            function clearWordCloud() {
+                document.getElementById("word-cloud").innerHTML = "";
+                document.getElementById("word-cloud").style.display = "none";
+            }
+            function clearFlowchart() {
+                document.getElementById("flowchart").innerHTML = "";
+                document.getElementById("flowchart").style.display = "none";
+            }
+            function clearVisuals() {
+                document.getElementById('visual-container').innerHTML = '';
+                document.getElementById("visual-container").style.display = "none";
+            }
+            function clearVisualKnowledge() {
+                document.getElementById('visual-knowledge').innerHTML = '';
+                document.getElementById("visual-knowledge").style.display = "none";
+            }
+            function clearImage() {
+                document.getElementById('gallery').innerHTML = '';
+                document.getElementById("gallery").style.display = "none";
+            }
+            function clearConfigurational() {
+                document.getElementById('configurational').innerHTML = '';
+                document.getElementById("configurational").style.display = "none";
+            }
+
+            // Sunburst chart tıklama işlemi
+            fetch('json.json')
+                .then(response => response.json())
+                .then(data => {
+                    const svg = createSunburstChart(data);
+                    document.getElementById('sunburst-chart').appendChild(svg);
+
+                    svg.addEventListener('click', function (event) {
+                        const clickedNode = event.target.__data__;
+
+                        // Her tıklamada tüm içerikleri temizle
+                        clearWordCloud();
+                        clearFlowchart();
+                        clearVisuals();
+                        clearImage();
+                        clearConfigurational();
+                        hideIframe();
+
+                        if (clickedNode && clickedNode.data.name === "Conceptual Knowledge") {
+                            let parentNode = clickedNode.parent;
+                            while (parentNode) {
+                                if (parentNode.data.summary) {
+                                    const summaryText = parentNode.data.summary;
+                                    generateWordCloud(summaryText); // Wordcloud oluştur
+                                    showIframe(); // iframe'i göster
+                                    return; // İşlemi sonlandır
+                                }
+                                parentNode = parentNode.parent; // Üst düğüme geç
+                            }
+                        }
+
+
+                        else if (clickedNode && clickedNode.data.name === "Procedural Knowledge") {
+                            let parentNode = clickedNode.parent;
+                            hideIframe(); // iframe'i kaldır
+
+                            while (parentNode) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showIframeWithCollaborativeFC();
+                                    return;
+                                }
+
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showIframeWithArobotFC();
+                                    return;
+                                }
+
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showIframeWithAdaptiveFC();
+                                    return;
+                                }
+
+                                parentNode = parentNode.parent;
+                            }
+                        }
+
+                        else if (clickedNode && clickedNode.data.name === "Visual Knowledge") {
+
+                            let parentNode = clickedNode.parent;
+                            while (parentNode) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showImageWithCollaborative();
+                                    return;
+                                }
+
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showImageWithArobot();
+                                    return;
+                                }
+
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showImageWithAdaptive();
+                                    return;
+                                }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+
+                        else if (clickedNode && clickedNode.data.name === "Configurational Knowledge") {
+                            let parentNode = clickedNode.parent;
+                            hideIframe(); // iframe'i kaldır
+
+                            while (parentNode) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showIframeWithCollaborativeIF();
+                                    return;
+                                }
+
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showIframeWithArobotIF();
+                                    return;
+                                }
+
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showIframeWithAdaptiveIF();
+                                    return;
+                                }
+
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                    });
+                });
+        });
+
+        // Sunburst grafiğini oluştur
+        function createSunburstChart(data) {
+            const width = 928;
+            const height = width;
+            const radius = width / 6;
+            const color = d3.scaleOrdinal()
+                .domain(d3.range(data.children.map((_, i) => i)))  // Veri uzunluğuna göre domain ayarlıyoruz
+                .range(["#003366", "#004488", "#005599", "#0066cc", "#0077dd"]); // Koyu mavi renk tonları
+
+            const hierarchy = d3.hierarchy(data)
+                .sum(d => d.value)
+                .sort((a, b) => b.value - a.value);
+
+            const root = d3.partition()
+                .size([2 * Math.PI, hierarchy.height + 1])
+                (hierarchy);
+                root.each(d => d.current = d);
+
+
+            console.log(root); // root verisini kontrol et
+
+
+            root.each(d => d.current = d);
+
+            const arc = d3.arc()
+                .startAngle(d => d.x0)
+                .endAngle(d => d.x1)
+                .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                .padRadius(radius * 1.5)
+                .innerRadius(d => d.y0 * radius)
+                .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+            const svg = d3.create("svg")
+                .attr("viewBox", [-width / 2, -height / 2, width, height])  // Merkezde konumlandırma
+                .style("font", "12px sans-serif")
+                .style("font-family", "Segoe UI")
+                .style("width", "100%")
+        .style("height", "100%")
+        .attr("preserveAspectRatio", "xMidYMid meet");
+            // Tıklama ve hover rengi işlevselliği
+            let clickedNode = null; // Tıklanan düğümü saklamak için değişken
+
+            const path = svg.append("g")
+                .selectAll("path")
+                .data(root.descendants().slice(1))
+                .join("path")
+                .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
+                .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+                .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+                .attr("d", d => arc(d.current))
+                .on("mouseenter", function (event, d) {
+                    // Hover olduğunda, eğer tıklanmamışsa rengi #005599 yap
+                    if (clickedNode !== d) {
+                        d3.select(this).attr("fill", "#abd0f1");
+                    }
+                })
+                .on("mouseleave", function (event, d) {
+                    // Hover bittiğinde, eğer tıklanmamışsa eski rengini geri al
+                    if (clickedNode !== d) {
+                        d3.select(this).attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); });
+                    }
+                })
+                .on("click", function (event, d) {
+                    // Tıklanan düğüm başka bir düğümse, önceki düğümün rengini eski haline getir
+                    if (clickedNode !== null && clickedNode !== d) {
+                        d3.selectAll("path")
+                            .filter(dd => dd === clickedNode)
+                            .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); });
+                    }
+
+                    // Yeni tıklanan düğümü sakla ve rengini #005599 yap
+                    clickedNode = d;
+                    d3.select(this).attr("fill", "#abd0f1");
+                });
+
+            path.filter(d => d.children)
+                .style("cursor", "pointer")
+                .on("click", clicked);
+
+            const format = d3.format(",d");
+
+            const tooltip = d3.select("#customTooltip");
+
+            path
+                .on("mouseover", function (event, d) {
+                    const hierarchy = d.ancestors().reverse().map(d => d.data.name);
+                    tooltip
+                        .style("display", "block")
+                        .html(`${hierarchy.join(" › <br>")}`);
+                })
+                .on("mousemove", function (event) {
+                    tooltip
+                        .style("top", (event.pageY + 10) + "px")
+                        .style("left", (event.pageX + 10) + "px");
+                })
+                .on("mouseout", function () {
+                    tooltip.style("display", "none");
+                });
+
+            const label = svg.append("g")
+                .attr("pointer-events", "none")
+                .attr("text-anchor", "middle")
+                .style("user-select", "none")
+                .selectAll("text")
+                .data(root.descendants().slice(1))
+                .join("text")
+                .attr("dy", "0.35em")
+                .attr("fill-opacity", d => +labelVisible(d.current))
+                .attr("transform", d => labelTransform(d.current))
+                .text(d => d.data.name.length > 20 ? d.data.name.slice(0, 15) + "..." : d.data.name);
+
+            const parent = svg.append("circle")
+                .datum(root)
+                .attr("r", radius)
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .on("click", clicked);
+
+            let parentNameLabel = svg.append("text")
+                .attr("dy", "0.5em")
+                .attr("text-anchor", "middle")
+                .style("user-select", "none")
+                .attr("fill-opacity", 1)
+                .style("font-size", "18px")
+                .style("font-family", "Segoe UI")
+                .style("font-weight", "bold")
+                .text(root.data.name);
+
+            let currentDepth = 1;
+
+            function clicked(event, p) {
+                // `p.depth === 1` kontrolünü kaldırıyoruz ve `parent` değişkenini doğru şekilde ayarlıyoruz.
+                parent.datum(p.depth === 1 ? null : p.parent || root);
+                parentNameLabel.text(p.depth === 1 ? root.data.name : p.data.name);
+
+                // Her düğüm için hedef değerleri güncelle
+                root.each(d => {
+                    d.target = {
+                        x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                        x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                        y0: Math.max(0, d.y0 - p.depth),
+                        y1: Math.max(0, d.y1 - p.depth)
+                    };
+                });
+
+                // Animasyon süresi
+                const duration = event.altKey ? 7500 : 750;
+                const transition = svg.transition().duration(duration);
+
+                // Path geçişi ve animasyonu
+                path.transition(transition)
+                    .tween("data", d => {
+                        const i = d3.interpolate(d.current, d.target);
+                        return t => d.current = i(t);
+                    })
+                    .filter(function (d) {
+                        return +this.getAttribute("fill-opacity") || arcVisible(d.target);
+                    })
+                    .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
+                    .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+                    .attrTween("d", d => () => arc(d.current));
+
+                // Etiket geçişi ve animasyonu
+                label.filter(function (d) {
+                    return +this.getAttribute("fill-opacity") || labelVisible(d.target);
+                }).transition(transition)
+                    .attr("fill-opacity", d => +labelVisible(d.target))
+                    .attrTween("transform", d => () => labelTransform(d.current));
+            }
+
+
+            // Helper functions to keep the code clean and reusable
+            function arcVisible(d) {
+                // `depth === 1` olan düğümleri görünür yapalım
+                return (d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0) || d.depth === 1;
+            }
+
+            function labelVisible(d) {
+                // Etiketlerin boyutlarını kontrol edelim
+                return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+            }
+
+            function labelTransform(d) {
+                const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                const y = (d.y0 + d.y1) / 2 * radius;
+                return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+            }
+
+
+
+            return svg.node();
+        }
+
+        function toggleNodeVisibility(d) {
+            if (d.children) {
+                d.children.forEach(child => {
+                    child.hidden = !child.hidden;
+                });
+            }
+        }
+
+
+        // ----------------------------------------WORDCLOUD
+        function generateWordCloud(summaryText) {
+            // Kelimeleri sayma işlemi
+            const wordData = summaryText.split(/\s+/).reduce((acc, word) => {
+                word = word.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                if (word.length > 3) acc[word] = (acc[word] || 0) + 1;
+                return acc;
+            }, {});
+
+            // Stopwords listesi
+            const stopwords = ["a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for",
+                "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "also",
+                "to", "from", "up", "upon", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then",
+                "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most",
+                "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "say",
+                "says", "said", "shall", "i", "me", "my", "myself", "we", "us", "our", "ours", "ourselves", "you", "your",
+                "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it",
+                "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "whose",
+                "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has",
+                "had", "having", "do", "does", "did", "doing", "will", "would", "should", "can", "could", "ought", "i'm",
+                "you're", "he's", "she's", "it's", "we're", "they're", "i've", "you've", "we've", "they've", "i'd", "you'd",
+                "he'd", "she'd", "we'd", "they'd", "i'll", "you'll", "he'll", "she'll", "we'll", "they'll", "isn't", "aren't",
+                "wasn't", "weren't", "hasn't", "haven't", "hadn't", "doesn't", "don't", "didn't", "won't", "wouldn't",
+                "shan't", "shouldn't", "can't", "cannot", "couldn't", "mustn't", "let's", "that's", "who's", "what's",
+                "here's", "there's", "when's", "where's", "why's", "how's", "ones", "aims", "tries", "kind", "study", "used", "uses"];
+
+            const filteredWords = Object.entries(wordData)
+                .filter(([word]) => !stopwords.includes(word))
+                .map(([word, count]) => ({
+                    text: word,
+                    size: count * 10
+                }));
+
+            const maxSize = Math.max(...filteredWords.map(d => d.size));
+            const minSize = Math.min(...filteredWords.map(d => d.size));
+
+
+            filteredWords.forEach(d => {
+                d.size = Math.floor(((d.size - minSize) / (maxSize - minSize)) * 60 + 10);
+            });
+
+            const width = window.innerWidth * 0.3; // 30vw
+            const height = window.innerHeight * 0.85; // 85vh
+
+            const color = d3.scaleOrdinal()
+                .domain(filteredWords.map((_, i) => i))
+                .range(["#F0F8FF", "#F5F5F5", "#B0C4DE"]);
+
+            const layout = d3.layout.cloud()
+                .size([width, height])
+                .words(filteredWords)
+                .padding(10)
+                .rotate(() => ~~(Math.random() * 2) * 90)
+                .font("Segoe UI")
+                .fontSize(d => d.size * 1.5)
+                .on("end", draw);
+
+            layout.start();
+
+            function draw(words) {
+                d3.select("#word-cloud").style("display", "block").selectAll("*").remove();
+                d3.select("#word-cloud")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", `translate(${width / 2},${height / 2})`)
+                    .selectAll("text")
+                    .data(words)
+                    .enter()
+                    .append("text")
+                    .style("font-size", d => `${d.size}px`)
+                    .style("font-family", "Segoe UI")
+                    .style("fill", (d, i) => color(i))
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`)
+                    .text(d => d.text);
+            }
+
+            // Personalize butonunu göster
+            const personalizeButton = document.querySelector('.nav-item.dropdown');
+            if (personalizeButton) {
+                personalizeButton.style.display = 'block';  // Butonu görünür yap
+            }
+        }
+
+        // -----------------------FLOWCHARTS // PROCEDURAL
+        function showIframeWithCollaborativeFC() {
+            const iframeContainer = document.getElementById('iframe-container');
+            const iframe = document.getElementById('collaborative-iframe');
+            const allIframes = iframeContainer.querySelectorAll('iframe');
+
+            // Tüm iframe'leri gizle
+            allIframes.forEach(iframe => iframe.style.display = 'none');
+
+            // İlgili iframe'i göster
+            iframe.style.display = 'block';
+            iframe.src = 'collaborative-flowchart.html'; // Set iframe source to collaborativeFC.html
+            iframeContainer.style.display = 'block'; // Make iframe container visible
+            showPersonalizeButton();
+
+        }
+
+        function showIframeWithArobotFC() {
+            const iframeContainer = document.getElementById('iframe-container');
+            const iframe = document.getElementById('arobot-iframe');
+            const allIframes = iframeContainer.querySelectorAll('iframe');
+
+            // Tüm iframe'leri gizle
+            allIframes.forEach(iframe => iframe.style.display = 'none');
+
+            // İlgili iframe'i göster
+            iframe.style.display = 'block';
+            iframe.src = 'arobot-flowchart.html'; // Set iframe source to arobotFC.html
+            iframeContainer.style.display = 'block'; // Make iframe container visible
+            showPersonalizeButton();
+
+        }
+
+        function showIframeWithAdaptiveFC() {
+            const iframeContainer = document.getElementById('iframe-container');
+            const iframe = document.getElementById('adaptive-iframe');
+            const allIframes = iframeContainer.querySelectorAll('iframe');
+
+            allIframes.forEach(iframe => iframe.style.display = 'none');
+
+            iframe.style.display = 'block';
+            iframe.src = 'adaptive-flowchart.html'; // Set iframe source to adaptiveFC.html
+            iframeContainer.style.display = 'block'; // Make iframe container visible
+            showPersonalizeButton();
+
+        }
+
+        function removeIframe() {
+            const iframeContainer = document.getElementById('iframe-container');
+            iframeContainer.style.display = 'none'; // iframe'i gizliyoruz
+        }
+
+
+        // -----------------------CONFIGURATIONAL
+        function showIframeWithCollaborativeIF() {
+            const iframeContainer = document.getElementById('configurational');
+            const iframe = document.getElementById('collaborative-iframe');
+            const allIframes = iframeContainer.querySelectorAll('iframe');
+
+            // Tüm iframe'leri gizle
+            allIframes.forEach(iframe => iframe.style.display = 'none');
+
+            // İlgili iframe'i göster
+            iframe.style.display = 'block';
+            iframe.src = 'collaborative-configurational.html'; // Set iframe source to collaborativeFC.html
+            iframeContainer.style.display = 'block'; // Make iframe container visible
+            showPersonalizeButton();
+
+        }
+
+        function showIframeWithArobotIF() {
+            const iframeContainer = document.getElementById('configurational');
+            const iframe = document.getElementById('arobot-iframe');
+            const allIframes = iframeContainer.querySelectorAll('iframe');
+
+            // Tüm iframe'leri gizle
+            allIframes.forEach(iframe => iframe.style.display = 'none');
+
+            // İlgili iframe'i göster
+            iframe.style.display = 'block';
+            iframe.src = 'arobot-configurational.html'; // Set iframe source to arobotFC.html
+            iframeContainer.style.display = 'block'; // Make iframe container visible
+            showPersonalizeButton();
+
+        }
+
+        function showIframeWithAdaptiveIF() {
+            const iframeContainer = document.getElementById('configurational');
+            const iframe = document.getElementById('adaptive-iframe');
+            const allIframes = iframeContainer.querySelectorAll('iframe');
+
+            allIframes.forEach(iframe => iframe.style.display = 'none');
+
+            iframe.style.display = 'block';
+            iframe.src = 'adaptive-configurational.html'; // Set iframe source to adaptiveFC.html
+            iframeContainer.style.display = 'block'; // Make iframe container visible
+            showPersonalizeButton();
+
+        }
+
+        function removeIframe() {
+            const iframeContainer = document.getElementById('configurational');
+            iframeContainer.style.display = 'none'; // iframe'i gizliyoruz
+        }
+
+
+        // -----------------------Görselleri oluştur-----------------------------
+        // Resim gösterme fonksiyonları
+
+        // Visual Knowledge içinde tıklama olduğunda, olayı yaymamayı sağla
+        document.getElementById('visual-knowledge').addEventListener('click', function (event) {
+            event.stopPropagation(); // Bu tıklama dışarıdaki dinleyicilere yayılmasın
+        });
+
+        // Görselleri ekleme fonksiyonları
+        function showImageWithCollaborative() {
+            const imageContainer = document.getElementById('gallery');
+            const visualContainer = document.getElementById('visual-knowledge');
+
+            const image = document.createElement('img');
+            image.src = '../images-visual/collaborative2.jpg';
+            image.alt = 'Collaborative Image';
+            image.style.width = "90%";
+            image.style.height = "auto";
+
+            imageContainer.innerHTML = ''; // Eski içerikleri temizle
+            imageContainer.appendChild(image);
+
+            visualContainer.style.display = 'block'; // Visual Knowledge kutusunu aç
+            imageContainer.style.display = 'block'; // Galeriyi aç
+            showPersonalizeButton(); // Kişiselleştirme butonunu göster
+        }
+
+        function showImageWithArobot() {
+            const imageContainer = document.getElementById('gallery');
+            const visualContainer = document.getElementById('visual-knowledge');
+
+            const image = document.createElement('img');
+            image.src = '../images-visual/arobot2.jpg';
+            image.alt = 'Arobot Image';
+            image.style.width = "90%";
+            image.style.height = "auto";
+
+            imageContainer.innerHTML = ''; // Eski içerikleri temizle
+            imageContainer.appendChild(image);
+
+            visualContainer.style.display = 'block'; // Visual Knowledge kutusunu aç
+            imageContainer.style.display = 'block'; // Galeriyi aç
+            showPersonalizeButton(); // Kişiselleştirme butonunu göster
+        }
+
+        function showImageWithAdaptive() {
+            const imageContainer = document.getElementById('gallery');
+            const visualContainer = document.getElementById('visual-knowledge');
+
+            const image = document.createElement('img');
+            image.src = '../images-visual/adaptive2.jpg';
+            image.alt = 'Adaptive Image';
+            image.style.width = "90%";
+            image.style.height = "auto";
+
+            imageContainer.innerHTML = ''; // Eski içerikleri temizle
+            imageContainer.appendChild(image);
+
+            visualContainer.style.display = 'block'; // Visual Knowledge kutusunu aç
+            imageContainer.style.display = 'block'; // Galeriyi aç
+            showPersonalizeButton(); // Kişiselleştirme butonunu göster
+        }
+
+        //-----------------------RESIZE-----------------------------
+        const elements = document.querySelectorAll("#iframe-container, .gallery");
+        const resizeHandler = document.getElementById("resize-handler");
+
+        let startX, startY, startWidth, startHeight;
+
+        elements.forEach(element => {
+            resizeHandler.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = element.offsetWidth;
+                startHeight = element.offsetHeight;
+
+                document.addEventListener("mousemove", onMouseMove);
+                document.addEventListener("mouseup", onMouseUp);
+            });
+
+            function onMouseMove(e) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                element.style.width = startWidth - dx + "px";  // Adjust width from the left
+                element.style.height = startHeight + dy + "px"; // Adjust height from the bottom
+            }
+
+            function onMouseUp() {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoJS Interactive Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/gojs@3.0.16/release/go.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 10px;
+      background-color: #638DB6;
+    }
+    #myDiagramDiv {
+      background-color: #638DB6;
+      width: 200%;
+      height: 620px;
+      margin-top: 0px;
+    }
+  </style>
+</head>
+<body>
+  <div id="myDiagramDiv"></div>
+
+  <script>
+    // Custom continuous force-directed layout
+    class ContinuousForceDirectedLayout extends go.ForceDirectedLayout {
+      constructor(init) {
+        super();
+        if (init) Object.assign(this, init);
+      }
+
+      isFixed(v) {
+        return v.node.isSelected;
+      }
+
+      doLayout(coll) {
+        if (!this._isObserving) {
+          this._isObserving = true;
+          this.diagram.addModelChangedListener((e) => {
+            if (e.modelChange !== '' || e.propertyName === 'StartingFirstTransaction') {
+              this.network = null;
+            }
+          });
+        }
+        var net = this.network;
+        if (net === null) {
+          this.network = net = this.makeNetwork(coll);
+        } else {
+          this.diagram.nodes.each((n) => {
+            var v = net.findVertex(n);
+            if (v !== null) v.bounds = n.actualBounds;
+          });
+        }
+        super.doLayout(coll);
+        this.network = net;
+      }
+    }
+
+    function init() {
+     
+      const $ = go.GraphObject.make;
+
+      const myDiagram = $(go.Diagram, 'myDiagramDiv', {
+        initialAutoScale: go.AutoScale.Uniform,
+        contentAlignment: go.Spot.Center,
+        layout: new ContinuousForceDirectedLayout({
+          defaultSpringLength: 150
+        }),
+        SelectionMoved: (e) => e.diagram.layout.invalidateLayout()
+      });
+
+      // Node template - Set to a very light gray color
+      myDiagram.nodeTemplate = $(go.Node, 'Auto',
+        $(go.Shape, 'Circle', { fill: '#f0f0f0', stroke: 'white' }), // Light gray fill
+        $(go.TextBlock, { font: 'bold 14pt Segoe UI', textAlign: 'center', margin: 5 },
+          new go.Binding('text'))
+      );
+
+      // Link template - Set arrows (oklar) to white
+      myDiagram.linkTemplate = $(go.Link,
+        $(go.Shape, { stroke: 'white' }),
+        $(go.Shape, { toArrow: 'Standard', stroke: 'white' }), // Set arrow color to white
+        $(go.Panel, 'Auto',
+          $(go.Shape, { fill: 'rgba(240, 240, 240, 0.5)', stroke: null }), // Light gray fill
+          $(go.TextBlock, { margin: 4, font: '12pt sans-serif' },
+            new go.Binding('text'))
+        )
+      );
+
+      // Diagram data
+      // Diagram data - Simplified (intermediate) for first summary (Collaborative Filament Winding)
+      myDiagram.model = new go.GraphLinksModel(
+        [ // Node data (~10 nodes)
+          { key: 1, text: 'Human-Robot Collaboration' },    // Central Theme
+          { key: 2, text: 'Humans' },                      // Participants
+          { key: 3, text: 'Robots' },                      // Participants
+          { key: 4, text: 'Structure / Modules' },         // Goal & Output (Combined)
+          { key: 5, text: 'Filament Winding' },            // Core fabrication method
+          { key: 6, text: 'Fabrication System' },          // Hardware (End Effector, Tension)
+          { key: 7, text: 'Interaction & Communication' }, // Interface & Coordination (Wearables, Network, Tasks)
+          { key: 8, text: 'Computational Control' },       // Software (Planning, IK, Syntax)
+          { key: 9, text: 'Live Exhibit / Safety' },       // Context & Constraint
+          { key: 10, text: 'Deviation Handling' }          // Outcome / Addressed Challenge
+        ],
+        [ // Link data
+          { from: 2, to: 1, text: 'participate in' },
+          { from: 3, to: 1, text: 'participate in' },
+          { from: 1, to: 4, text: 'builds' },                 // Collaboration builds the structure
+          { from: 3, to: 5, text: 'perform' },               // Robots perform winding
+          { from: 5, to: 4, text: 'creates' },               // Winding creates the structure/modules
+          { from: 3, to: 6, text: 'use' },                   // Robots use the system
+          { from: 6, to: 5, text: 'enables' },               // System enables winding
+          { from: 7, to: 1, text: 'enables' },               // Interaction enables collaboration
+          { from: 7, to: 2, text: 'interfaces with' },       // Interaction involves humans (e.g., wearables)
+          { from: 8, to: 3, text: 'controls' },              // Control software directs robots
+          { from: 8, to: 5, text: 'plans' },                 // Control software plans the winding process
+          { from: 8, to: 9, text: 'ensures safety for' },    // Control addresses exhibit safety
+          { from: 1, to: 10, text: 'addresses' }             // Collaboration addresses deviations
+        ]
+      );
+    }
+      
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

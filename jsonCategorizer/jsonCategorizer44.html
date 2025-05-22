@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Categorized Hierarchical Keyword Classification</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        /* Global Styles */
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 5 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 0px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #000000;
+            margin-bottom: 30px;
+            margin-top: 20px;
+            text-align: center;
+            font-family: "Segoe UI", sans-serif;
+            font-weight: normal;
+            font-size: 32px; /* Burada istediğin boyutu belirtebilirsin */
+        }
+        
+
+        /* Controls Area */
+        .controls-area {
+            display: flex;
+            justify-content: space-between;
+            /* Aligns items */
+            align-items: center;
+            /* Vertical alignment */
+            margin-bottom: 20px;
+            gap: 10px;
+            /* Space between elements */
+            flex-wrap: wrap;
+            /* Allow wrapping on small screens */
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            /* Allow search to take available space */
+            min-width: 250px;
+            /* Prevent search from becoming too small */
+        }
+
+        #searchButton {
+            background-color: #005599;
+            border-color: #005599;
+            border-radius: 0px;
+        }
+
+        #searchButton:hover {
+            background-color: #289900;
+        }
+
+
+        .btn-secondary {
+            border-radius: 0px;
+        }
+
+
+        #downloadJsonBtn {
+            margin: 10px;
+            padding: 5px 10px;
+            background-color: #005599;
+            /* Blue by default */
+            color: white;
+            border: none;
+            border-radius: 0px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #downloadJsonBtn:hover {
+            background-color: #289900;
+        }
+
+        .btn-info {
+            color: #fff;
+            background-color: #005599;
+            border-color: #005599;
+            border-radius: 0px;
+        }
+
+        .search-container .form-control {
+            margin-right: 10px;
+            flex-grow: 1;
+            border-radius: 0px;
+        }
+
+        #searchFeedback {
+            margin-left: 15px;
+            font-style: italic;
+            color: #dc3545;
+        }
+
+        .control-buttons button {
+            /* Target all buttons in this area */
+            margin-left: 5px;
+        }
+
+
+        /* Drop Area */
+        .drop-area {
+            border: 2px dashed #ccc;
+            border-radius: 0px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+        }
+
+        .drop-area:hover {
+            background-color: #e6f2ff;
+        }
+
+        .drop-area p {
+            margin-bottom: 0;
+            color: #000000;
+        }
+
+
+        /* Loading Indicator */
+        .loading {
+            text-align: center;
+            font-size: 1.1em;
+            color: #6c757d;
+            display: none;
+            margin: 20px 0;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading .spinner-border {
+            margin-right: 10px;
+        }
+
+        /* --- Tree Styles --- */
+        #treeContainer {
+            border: 1px solid #dee2e6;
+            padding: 60px;
+            border-radius: 0px;
+            background-color: #ffffff;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul ul {
+            padding-left: 25px;
+        }
+
+        ul ul ul {
+            padding-left: 25px;
+        }
+
+        ul ul ul ul {
+            padding-left: 25px;
+        }
+
+
+        /* General List Item */
+        li {
+            margin-bottom: 4px;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        /* Hover effects */
+        li>.node-content:hover,
+        li.title-item:hover {
+            background-color: #f1f3f5;
+            border-radius: 4px;
+            cursor: default;
+        }
+
+        /* Node Content Wrapper */
+        .node-content {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 5px;
+            min-height: 24px;
+            cursor: default;
+            position: relative;
+        }
+
+        /* Toggle Icon */
+        .toggle-icon {
+            cursor: pointer;
+            margin-right: 6px;
+            font-size: 0.9em;
+            min-width: 15px;
+            display: inline-block;
+            text-align: center;
+            user-select: none;
+            color: #005599;
+            font-weight: bold;
+            transition: transform 0.1s ease-in-out;
+            visibility: visible;
+        }
+
+        .toggle-icon.hidden {
+            visibility: hidden;
+        }
+
+        .toggle-icon.active {
+            transform: rotate(90deg);
+        }
+
+        /* Nested UL */
+        .nested {
+            display: none;
+            border-left: 1px dashed #ced4da;
+            margin-left: 8px;
+            padding-top: 3px;
+        }
+
+        /* Adjusted padding based on nesting level */
+        li>ul.nested {
+            padding-left: 15px;
+            margin-left: 12px;
+        }
+
+        /* Level 1 nesting */
+        li>ul>li>ul.nested {
+            padding-left: 15px;
+            margin-left: 12px;
+        }
+
+        /* Level 2 nesting */
+        li>ul>li>ul>li>ul.nested {
+            padding-left: 15px;
+            margin-left: 12px;
+        }
+
+        /* Level 3 nesting */
+        /* Further levels - add if needed */
+
+
+        .active {
+            display: block;
+        }
+
+        /* Node Name and Count */
+        .node-name {
+            font-weight: 600;
+            color: #212529;
+            margin-right: 5px;
+        }
+
+        .node-count {
+            font-size: 0.85em;
+            color: #6c757d;
+        }
+
+        /* Title Item */
+        li.title-item {
+            font-style: italic;
+            color: #495057;
+            font-size: 0.95em;
+            display: block;
+            padding: 1px 5px 1px 18px;
+            /* Increased padding for titles */
+            line-height: 1.4;
+            list-style: none;
+            margin-left: 0;
+            /* Reset margin for titles */
+        }
+
+        /* Add specific style for title items directly under a keyword/group node */
+        li:not(.general-title-group):not(.single-article-group):not(.orphan-title-group):not(.bio-keyword-group)>ul.nested>li.title-item {
+            padding-left: 5px;
+            /* Less padding if listed directly */
+        }
+
+        /* Style for titles under the special groups */
+        .general-title-group>ul.nested>li.title-item,
+        .single-article-group>ul.nested>li.title-item,
+        .orphan-title-group>ul.nested>li.title-item,
+        .bio-keyword-group>ul.nested>li.title-item { /* Added BIO group */
+            padding-left: 18px;
+            /* Keep more padding */
+        }
+
+
+        /* --- Styling for Group Types --- */
+        .main-category>.node-content .node-name {
+            font-weight: 700;
+            color: #005599;
+            text-transform: uppercase;
+            font-size: 1.05em;
+        }
+
+        .misc-uncategorized-group>.node-content .node-name {
+            font-weight: 700;
+            color: #005599;
+            text-transform: uppercase;
+            font-size: 1.05em;
+        }
+
+        .sub-category>.node-content .node-name {
+            color: #17a2b8;
+            font-weight: 600;
+            font-style: normal;
+            /* Removed italic for sub-categories */
+        }
+
+        .synonym-group>.node-content .node-name {
+            color: #478de9;
+        }
+
+        .keyword-node>.node-content .node-name {
+            color: #343a40;
+            font-weight: 500;
+        }
+
+        /* Style for the "X Titles" groups and the Single-Article Category */
+        .general-title-group>.node-content .node-name,
+        .single-article-group>.node-content .node-name {
+            color: #dc3545;
+            /* Reddish color */
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        /* Special styling for Orphan titles group */
+        .orphan-title-group>.node-content .node-name {
+            color: #ffc107;
+            /* Amber/Yellow color */
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        /* Style for the dynamically created BIO group */
+        .bio-keyword-group > .node-content .node-name {
+            color: #478de9; /* Green color for BIO group */
+            font-weight: 600;
+        }
+
+        /* Search Highlight */
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
+        }
+
+        /* Statistics Area */
+        .statistics {
+            margin-top: 30px;
+            padding: 30px;
+            background-color: #e9ecef;
+            border-radius: 0px;
+        }
+
+        .statistics h5 {
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+
+        .statistics p {
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .statistics strong {
+            color: #212529;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Categorized Hierarchical Keyword Classification</h1>
+        <div class="drop-area" id="dropArea">
+            <p>Drag and drop a .json file here or click to upload.</p>
+            <input type="file" id="fileInput" style="display: none;" accept=".json" />
+        </div>
+
+        <div class="controls-area">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search keywords or titles...">
+                <button id="searchButton" class="btn btn-primary btn-sm">Search</button>
+                <span id="searchFeedback"></span>
+            </div>
+            <div class="control-buttons">
+                <button id="toggleAllBtn" class="btn btn-secondary btn-sm">Expand All</button>
+                <button id="untoggleAllBtn" class="btn btn-secondary btn-sm">Collapse All</button>
+                <button id="downloadJsonBtn" class="btn btn-info btn-sm">Download Tree (JSON)</button>
+            </div>
+        </div>
+
+
+        <div id="loadingMessage" class="loading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+            Processing File...
+        </div>
+        <div id="treeContainer"></div>
+        <div id="statisticsContainer" class="statistics mt-4"></div>
+    </div>
+
+    <script>
+        // --- Constants and DOM Elements ---
+        const dropArea = document.getElementById("dropArea");
+        const fileInput = document.getElementById("fileInput");
+        const treeContainer = document.getElementById("treeContainer");
+        const statisticsContainer = document.getElementById("statisticsContainer");
+        const loadingMessage = document.getElementById("loadingMessage");
+        const searchInput = document.getElementById("searchInput");
+        const searchButton = document.getElementById("searchButton");
+        const searchFeedback = document.getElementById("searchFeedback");
+        const toggleAllBtn = document.getElementById("toggleAllBtn");
+        const untoggleAllBtn = document.getElementById("untoggleAllBtn");
+        const downloadJsonBtn = document.getElementById("downloadJsonBtn");
+
+        const MISC_MAIN_CATEGORY_NAME = "MISCELLANEOUS";
+        const MISC_SUB_CATEGORY_NAME = "MISCELLANEOUS (Keywords)";
+        const FINAL_UNCATEGORIZED_SUB_NAME = "UNCATEGORIZED";
+        const SINGLE_ARTICLE_CATEGORY_NAME = "Single-Article Category"; // New constant
+        const ORPHAN_TITLES_SUFFIX = "Titles"; // Suffix for orphan title groups
+        const SINGLE_ARTICLE_THRESHOLD = 3; // Threshold for grouping single articles
+        const ORPHAN_GROUP_THRESHOLD = 1; // Group orphan titles if more than this many (Set to 1 to group even 2 orphans)
+        const DIRECT_TITLE_LIST_THRESHOLD = 10; // List titles directly if <= this number
+
+        // Global variable to store the processed tree data for HTML rendering AND JSON export
+        let currentProcessedTreeData = null; // Renamed for clarity
+        // Global variable to store paper details for JSON export
+        let paperDetailsMap = new Map();
+
+        const FLATTENED_CATEGORIES = new Set([
+            // Add main category names here if their sub-categories should be flattened
+            // e.g., 'DESIGN-METHODS-COMPUTATION'
+        ]);
+
+        // --- Synonym Map (No changes) ---
+        const synonymMap = { 'AI': 'ARTIFICIAL INTELLIGENCE', 'ML': 'MACHINE LEARNING', 'BIM': 'BUILDING INFORMATION MODELING', 'GIS': 'GEOGRAPHIC INFORMATION SYSTEM', 'VR': 'VIRTUAL REALITY', 'AR': 'AUGMENTED REALITY', 'CAD': 'COMPUTER AIDED DESIGN', 'CAAD': 'COMPUTER AIDED ARCHITECTURAL DESIGN', 'CFD': 'COMPUTATIONAL FLUID DYNAMICS', 'FEA': 'FINITE ELEMENT ANALYSIS', 'FEM': 'FINITE ELEMENT ANALYSIS', 'MODELLING': 'MODELING', 'ANALYSING': 'ANALYSIS', 'OPTIMISATION': 'OPTIMIZATION', 'PARAMETERISATION': 'PARAMETRIZATION', 'BEHAVIOUR': 'BEHAVIOR', 'VISUALISATION': 'VISUALIZATION', 'ARCHITECTURAL': 'ARCHITECTURE', 'COMPUTATIONAL': 'COMPUTATION', 'STRUCTURAL': 'STRUCTURE', 'SPATIAL': 'SPACE', 'GENERATIVE': 'GENERATION', 'SUSTAINABILITY': 'SUSTAINABLE', 'PERFORMANCE': 'PERFORM', 'ROBOTIC': 'ROBOTICS', 'COLLABORATIVE': 'COLLABORATION', 'URBAN': 'URBAN', 'CITY': 'CITY', 'CITIES': 'CITY', 'INTERACTIVE': 'INTERACTION', 'FABRICATION': 'FABRICATION', 'MANUFACTURING': 'FABRICATION', 'KNOWLEDGE': 'KNOWLEDGE', 'INFORMATION': 'KNOWLEDGE', 'LEARNING': 'EDUCATION', 'TEACHING': 'EDUCATION', 'PEDAGOGY': 'EDUCATION', 'WOOD': 'WOOD', 'TIMBER': 'TIMBER', 'CONCRETE': 'CONCRETE', 'ARTIFICIAL INTELLIGENCE': 'ARTIFICIAL INTELLIGENCE', 'MACHINE LEARNING': 'MACHINE LEARNING', 'BUILDING INFORMATION MODELING': 'BUILDING INFORMATION MODELING', 'GEOGRAPHIC INFORMATION SYSTEM': 'GEOGRAPHIC INFORMATION SYSTEM', 'VIRTUAL REALITY': 'VIRTUAL REALITY', 'AUGMENTED REALITY': 'AUGMENTED REALITY', 'COMPUTER AIDED DESIGN': 'COMPUTER AIDED DESIGN', 'COMPUTER AIDED ARCHITECTURAL DESIGN': 'COMPUTER AIDED ARCHITECTURAL DESIGN', 'COMPUTATIONAL FLUID DYNAMICS': 'COMPUTATIONAL FLUID DYNAMICS', 'FINITE ELEMENT ANALYSIS': 'FINITE ELEMENT ANALYSIS', 'MODELING': 'MODELING', 'ANALYSIS': 'ANALYSIS', 'OPTIMIZATION': 'OPTIMIZATION', 'PARAMETRIZATION': 'PARAMETRIZATION', 'BEHAVIOR': 'BEHAVIOR', 'VISUALIZATION': 'VISUALIZATION', 'ARCHITECTURE': 'ARCHITECTURE', 'COMPUTATION': 'COMPUTATION', 'STRUCTURE': 'STRUCTURE', 'SPACE': 'SPACE', 'GENERATION': 'GENERATION', 'SUSTAINABLE': 'SUSTAINABLE', 'PERFORM': 'PERFORM', 'ROBOTICS': 'ROBOTICS', 'COLLABORATION': 'COLLABORATION', 'INTERACTION': 'INTERACTION', 'EDUCATION': 'EDUCATION', 'MATERIAL': 'MATERIAL' };
+
+        // --- Top-Level Category Mapping (No changes) ---
+        const keywordToGroupMap = { 'DESIGN': 'DESIGN-METHODS-COMPUTATION', 'PARAMETRIC': 'DESIGN-METHODS-COMPUTATION', 'COMPUTATION': 'DESIGN-METHODS-COMPUTATION', 'GENERATION': 'DESIGN-METHODS-COMPUTATION', 'ALGORITHMIC': 'DESIGN-METHODS-COMPUTATION', 'ALGORITHMS': 'DESIGN-METHODS-COMPUTATION', 'EVOLUTIONARY': 'DESIGN-METHODS-COMPUTATION', 'GENETIC': 'DESIGN-METHODS-COMPUTATION', 'SHAPE': 'DESIGN-METHODS-COMPUTATION', 'FORM': 'DESIGN-METHODS-COMPUTATION', 'FORM-FINDING': 'DESIGN-METHODS-COMPUTATION', 'GEOMETRIC': 'DESIGN-METHODS-COMPUTATION', 'GEOMETRY': 'DESIGN-METHODS-COMPUTATION', 'TOPOLOGY': 'DESIGN-METHODS-COMPUTATION', 'OPTIMIZATION': 'DESIGN-METHODS-COMPUTATION', 'MULTI-OBJECTIVE': 'DESIGN-METHODS-COMPUTATION', 'PROCESS': 'DESIGN-METHODS-COMPUTATION', 'CREATIVITY': 'DESIGN-METHODS-COMPUTATION', 'CONCEPTUAL': 'DESIGN-METHODS-COMPUTATION', 'SKETCHING': 'DESIGN-METHODS-COMPUTATION', 'PATTERN': 'DESIGN-METHODS-COMPUTATION', 'SYSTEMS': 'DESIGN-METHODS-COMPUTATION', 'PARAMETRIZATION': 'DESIGN-METHODS-COMPUTATION', 'AGENT': 'DESIGN-METHODS-COMPUTATION', 'AGENT-BASED': 'DESIGN-METHODS-COMPUTATION', 'MULTI-AGENT': 'DESIGN-METHODS-COMPUTATION', 'CELLULAR': 'DESIGN-METHODS-COMPUTATION', 'DIGITAL': 'DIGITAL-AI-DATA', 'COMPUTER': 'DIGITAL-AI-DATA', 'SOFTWARE': 'DIGITAL-AI-DATA', 'PROGRAMMING': 'DIGITAL-AI-DATA', 'TOOLS': 'DIGITAL-AI-DATA', 'COMPUTER AIDED DESIGN': 'DIGITAL-AI-DATA', 'BUILDING INFORMATION MODELING': 'DIGITAL-AI-DATA', 'COMPUTER AIDED ARCHITECTURAL DESIGN': 'DIGITAL-AI-DATA', 'COMPUTER-AIDED': 'DIGITAL-AI-DATA', 'ARTIFICIAL INTELLIGENCE': 'DIGITAL-AI-DATA', 'MACHINE LEARNING': 'DIGITAL-AI-DATA', 'DEEP': 'DIGITAL-AI-DATA', 'DATA': 'DIGITAL-AI-DATA', 'BIG': 'DIGITAL-AI-DATA', 'DATA-DRIVEN': 'DIGITAL-AI-DATA', 'NETWORK': 'DIGITAL-AI-DATA', 'EXPERT': 'DIGITAL-AI-DATA', 'INTELLIGENT': 'DIGITAL-AI-DATA', 'SEMANTIC': 'DIGITAL-AI-DATA', 'AUTOMATION': 'DIGITAL-AI-DATA', 'TECHNOLOGY': 'DIGITAL-AI-DATA', 'OPEN': 'DIGITAL-AI-DATA', 'DISTRIBUTED': 'DIGITAL-AI-DATA', 'INTEGRATION': 'DIGITAL-AI-DATA', 'INTEGRATED': 'DIGITAL-AI-DATA', 'POINT': 'DIGITAL-AI-DATA', 'GRAPH': 'DIGITAL-AI-DATA', 'SIMULATION': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'ANALYSIS': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'PERFORM': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'PERFORMANCE-BASED': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'ENVIRONMENTAL': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'ENERGY': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'THERMAL': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'SOLAR': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'DAYLIGHT': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'LIGHTING': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'SUSTAINABLE': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'SDG': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'EVALUATION': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'FINITE ELEMENT ANALYSIS': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'COMPUTATIONAL FLUID DYNAMICS': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'FABRICATION': 'FABRICATION-CONSTRUCTION-MATERIALS', 'ADDITIVE': 'FABRICATION-CONSTRUCTION-MATERIALS', 'ROBOTICS': 'FABRICATION-CONSTRUCTION-MATERIALS', 'CNC': 'FABRICATION-CONSTRUCTION-MATERIALS', 'CONSTRUCTION': 'FABRICATION-CONSTRUCTION-MATERIALS', 'MATERIAL': 'FABRICATION-CONSTRUCTION-MATERIALS', 'WOOD': 'FABRICATION-CONSTRUCTION-MATERIALS', 'TIMBER': 'FABRICATION-CONSTRUCTION-MATERIALS', 'CONCRETE': 'FABRICATION-CONSTRUCTION-MATERIALS', 'STEEL': 'FABRICATION-CONSTRUCTION-MATERIALS', 'GLASS': 'FABRICATION-CONSTRUCTION-MATERIALS', 'BAMBOO': 'FABRICATION-CONSTRUCTION-MATERIALS', 'MASONRY': 'FABRICATION-CONSTRUCTION-MATERIALS', 'PHYSICAL': 'FABRICATION-CONSTRUCTION-MATERIALS', 'RAPID': 'FABRICATION-CONSTRUCTION-MATERIALS', 'SOLID': 'FABRICATION-CONSTRUCTION-MATERIALS', 'VIRTUAL REALITY': 'VISUALIZATION-INTERACTION-XR', 'AUGMENTED REALITY': 'VISUALIZATION-INTERACTION-XR', 'MIXED': 'VISUALIZATION-INTERACTION-XR', 'REALITY': 'VISUALIZATION-INTERACTION-XR', '3D': 'VISUALIZATION-INTERACTION-XR', 'VISUALIZATION': 'VISUALIZATION-INTERACTION-XR', 'REPRESENTATION': 'VISUALIZATION-INTERACTION-XR', 'VISUAL': 'VISUALIZATION-INTERACTION-XR', 'IMAGE': 'VISUALIZATION-INTERACTION-XR', 'ANIMATION': 'VISUALIZATION-INTERACTION-XR', 'IMMERSIVE': 'VISUALIZATION-INTERACTION-XR', 'REAL-TIME': 'VISUALIZATION-INTERACTION-XR', 'INTERACTION': 'VISUALIZATION-INTERACTION-XR', 'INTERFACE': 'VISUALIZATION-INTERACTION-XR', 'TANGIBLE': 'VISUALIZATION-INTERACTION-XR', 'GAME': 'VISUALIZATION-INTERACTION-XR', 'MOBILE': 'VISUALIZATION-INTERACTION-XR', 'ARCHITECTURE': 'ARCHITECTURE-BUILDING-STRUCTURE', 'BUILDING': 'ARCHITECTURE-BUILDING-STRUCTURE', 'STRUCTURE': 'ARCHITECTURE-BUILDING-STRUCTURE', 'FLOOR': 'ARCHITECTURE-BUILDING-STRUCTURE', 'OBJECT': 'ARCHITECTURE-BUILDING-STRUCTURE', 'URBAN': 'URBAN-SOCIAL-PLANNING', 'CITY': 'URBAN-SOCIAL-PLANNING', 'SPACE': 'URBAN-SOCIAL-PLANNING', 'SOCIAL': 'URBAN-SOCIAL-PLANNING', 'PUBLIC': 'URBAN-SOCIAL-PLANNING', 'PARTICIPATORY': 'URBAN-SOCIAL-PLANNING', 'PLANNING': 'URBAN-SOCIAL-PLANNING', 'HOUSING': 'URBAN-SOCIAL-PLANNING', 'PEDESTRIAN': 'URBAN-SOCIAL-PLANNING', 'LANDSCAPE': 'URBAN-SOCIAL-PLANNING', 'CULTURAL': 'URBAN-SOCIAL-PLANNING', 'HUMAN': 'URBAN-SOCIAL-PLANNING', 'USER': 'URBAN-SOCIAL-PLANNING', 'BEHAVIOR': 'URBAN-SOCIAL-PLANNING', 'KNOWLEDGE': 'KNOWLEDGE-EDUCATION-COLLABORATION', 'EDUCATION': 'KNOWLEDGE-EDUCATION-COLLABORATION', 'COLLABORATION': 'KNOWLEDGE-EDUCATION-COLLABORATION', 'COMMUNICATION': 'KNOWLEDGE-EDUCATION-COLLABORATION', 'PROTOCOL': 'KNOWLEDGE-EDUCATION-COLLABORATION', 'SMART': 'OTHER-CONCEPTS', 'RESPONSIVE': 'OTHER-CONCEPTS', 'ADAPTIVE': 'OTHER-CONCEPTS', 'DYNAMIC': 'OTHER-CONCEPTS', 'KINETIC': 'OTHER-CONCEPTS', 'COMPLEX': 'OTHER-CONCEPTS', 'NATURAL': 'OTHER-CONCEPTS', 'NEW': 'OTHER-CONCEPTS', 'EARLY': 'OTHER-CONCEPTS', 'ENGINEERING': 'OTHER-CONCEPTS', 'CONSTRAINTS': 'OTHER-CONCEPTS', 'MASS': 'OTHER-CONCEPTS', 'HYBRID': 'OTHER-CONCEPTS', 'DECISION': 'OTHER-CONCEPTS' };
+
+        // --- Secondary Grouping Rules (No changes) ---
+        const secondaryGroupRules = [{ name: "AI-DATA-ML", keywords: ['MACHINE', 'ARTIFICIAL', 'INTELLIGENCE', 'NEURAL', 'LEARNING', 'AI', 'DEEP', 'DATA', 'DATABASE', 'ONTOLOGY', 'SEMANTIC', 'BIG', 'CLOUD', 'CLASSIFICATION', 'CLUSTERING', 'PREDICTION', 'REASONING', 'KNOWLEDGE-BASED', 'CASE-BASED', 'CNN', 'GAN', 'AGENT', 'AGENT-BASED', 'MULTI-AGENT', 'SWARM', 'AUTOMATED', 'AUTOMATIC', 'EXPERT', 'SENTIMENT', 'NLP', 'TEXT', 'GPT', 'CHATGPT', 'TRANSFORMERS', 'FEATURE', 'RECOGNITION', 'PATTERN', 'RULE-BASED', 'LOGIC'] }, { name: "XR-VIS-3D", keywords: ['VIRTUAL', 'AUGMENTED', 'REALITY', 'MIXED', 'IMMERSIVE', 'XR', '3D', 'VISUALIZATION', 'RENDERING', 'ANIMATION', 'PHOTOGRAMMETRY', 'VISUAL', 'IMAGE', 'VIDEO', 'COLOR', 'COLOUR', 'GRAPHIC', 'MEDIA', 'GAME', 'GAMIFICATION', 'DISPLAY', 'HMD', 'VRML', 'X3D', 'POINT CLOUD', 'SCAN', 'LASER', 'LIDAR', 'TEXTURE', 'CAMERA', 'OCULUS', 'HOLOLENS', 'UNITY', 'UNREAL', 'MOTION', 'TRACKING', 'SKETCH', 'DRAWING', 'PHOTO'] }, { name: "HUMAN-SOCIAL-COGNITIVE", keywords: ['HUMAN', 'USER', 'COGNITION', 'COGNITIVE', 'PERCEPTION', 'PERCEPTUAL', 'AFFECTIVE', 'EMOTION', 'PSYCHOLOGY', 'BEHAVIOR', 'BEHAVIOURAL', 'SOCIAL', 'COMMUNITY', 'COLLECTIVE', 'PARTICIPATION', 'PARTICIPATORY', 'CO-DESIGN', 'CROWDSOURCING', 'ACCESSIBILITY', 'DISABILITY', 'ERGONOMICS', 'HCI', 'EXPERIENCE', 'SUBJECTIVE', 'QUALITATIVE', 'ETHNOGRAPHY', 'STAKEHOLDER', 'CITIZEN', 'OCCUPANT', 'AESTHETICS', 'PHENOMENOLOGY', 'EMPATHY', 'WELL-BEING', 'COMFORT'] }, { name: "BIO-NATURE-MATERIALS-SPECIFIC", keywords: ['BIO', 'BIOMIMETICS', 'BIOMIMICRY', 'BIOLOGY', 'MYCELIUM', 'ALGAE', 'LIVING', 'NATURE', 'NATURAL', 'ORGANIC', 'ECOLOGY', 'GREEN', 'CIRCULAR', 'RECYCLED', 'WASTE', 'MATERIALITY', 'COMPOSITE', 'TEXTILE', 'CERAMIC', 'CLAY', 'METAL', 'FABRIC', 'FIBER', 'POLYMER', 'CONCRETE', 'STEEL', 'WOOD', 'TIMBER', 'GLASS', 'BAMBOO', 'EARTH', 'STONE', 'PLASTIC', 'FOAM', 'PAPER', 'CARBON'] }, { name: "SIMULATION-MODELING-METHODS", keywords: ['MODEL', 'SIMULATOR', 'FINITE', 'METHODOLOGY', 'METHODS', 'FRAMEWORK', 'APPROACH', 'THEORY', 'RESEARCH', 'STUDY', 'CASE', 'EXPERIMENT', 'TEST', 'VALIDATION', 'COMPARISON', 'METRICS', 'QUANTITATIVE', 'STATISTICS', 'ANALYSIS', 'EVALUATION', 'ASSESSMENT'] }, { name: "PROTOTYPING-ASSEMBLY-MFG", keywords: ['PROTOTYPE', 'PROTOTYPING', 'ASSEMBLY', 'MODULAR', 'PREFABRICATION', 'FULL-SCALE', 'PHYSICAL', 'CRAFT', 'MAKER', 'FABLAB', 'WORKSHOP', 'TOOL', 'MACHINE', 'CNC', 'PRINTING', '3D-PRINTING', 'RAPID', 'ADDITIVE', 'SUBTRACTIVE', 'MANUFACTURING', 'INDUSTRIAL', 'PRODUCTION', 'AUTOMATION', 'ASSEMBLAGE', 'KIT-OF-PARTS'] }, { name: "WEB-NET-DB", keywords: ['WEB', 'ONLINE', 'INTERNET', 'PROTOCOL', 'NETWORK', 'DATABASE', 'CLOUD', 'SERVER', 'API', 'JSON', 'XML', 'HTML', 'WEBGL', 'WEBXR', 'WEBGIS', 'DISTRIBUTED', 'REMOTE', 'BLOCKCHAIN', 'IOT', 'LINKED', 'PLATFORM', 'SOFTWARE', 'SCRIPTING', 'GRASSHOPPER', 'PYTHON', 'JAVA', 'LISP', 'CODE'] }, { name: "SENSING-MAPPING-GIS", keywords: ['SENSOR', 'PHOTOGRAMMETRY', 'SCAN', 'REMOTE', 'MAPPING', 'GIS', 'GEOGRAPHIC', 'GEOGRAPHIC INFORMATION SYSTEM', 'SPATIAL', 'GPS', 'LOCATION', 'LIDAR', 'POINT CLOUD', 'IMAGE', 'AERIAL', 'SATELLITE', 'GEO', 'MAP', 'CARTOGRAPHY', 'SURVEY', 'TOPOGRAPHY', 'WAYFINDING', 'NAVIGATION'] }];
+
+        // --- Map Secondary Groups to Primary Groups for MERGING (No changes) ---
+        const secondaryToPrimaryMap = { 'AI-DATA-ML': 'DIGITAL-AI-DATA', 'XR-VIS-3D': 'VISUALIZATION-INTERACTION-XR', 'HUMAN-SOCIAL-COGNITIVE': 'URBAN-SOCIAL-PLANNING', 'BIO-NATURE-MATERIALS-SPECIFIC': 'FABRICATION-CONSTRUCTION-MATERIALS', 'SIMULATION-MODELING-METHODS': 'SIMULATION-PERFORMANCE-SUSTAINABILITY', 'PROTOTYPING-ASSEMBLY-MFG': 'FABRICATION-CONSTRUCTION-MATERIALS' };
+
+        // --- Set of Hyphenated Terms to Keep Intact ---
+        const keepHyphenatedTerms = new Set([
+            // Add terms from your maps/configs that MUST remain hyphenated
+            'FORM-FINDING',
+            'AGENT-BASED',
+            'MULTI-AGENT', // Added based on your example logic needs
+            'MULTI-OBJECTIVE',
+            'DATA-DRIVEN',
+            'PERFORMANCE-BASED',
+            'KNOWLEDGE-BASED', // from AI-DATA-ML secondary rule
+            'CASE-BASED', // from AI-DATA-ML secondary rule
+            'RULE-BASED', // from AI-DATA-ML secondary rule
+            'COMPUTER-AIDED', // from CAD-BIM-AEC sub-cat
+            'COMPUTER AIDED ARCHITECTURAL DESIGN', // Keep spaces here if it's a specific key
+            'POINT CLOUD', // Keep space
+            'POINT-CLOUDS', // Keep hyphen
+            'REAL-TIME', // from XR-VIS-3D secondary rule
+            '3D-PRINTING', // from PROTOTYPING-ASSEMBLY-MFG secondary rule
+            'KIT-OF-PARTS', // from PROTOTYPING-ASSEMBLY-MFG secondary rule
+            'WEB-BASED', // If needed
+            'LIFE-CYCLE', // from MATERIALS-BIO-NATURE sub-cat
+            'LOW-CARBON', // from MATERIALS-BIO-NATURE sub-cat
+            'ZERO-CARBON', // from MATERIALS-BIO-NATURE sub-cat
+            'ZERO-WASTE', // from MATERIALS-BIO-NATURE sub-cat
+            'DESIGN-TO-PRODUCTION', // from FABRICATION-ROBOTICS sub-cat
+            'DESIGN-TO-FABRICATION', // from FABRICATION-ROBOTICS sub-cat
+            'FULL-SCALE', // from FABRICATION-ROBOTICS sub-cat
+            'SELF-ASSEMBLY', // from FABRICATION-ROBOTICS sub-cat
+            'CYBER-PHYSICAL', // from FABRICATION-ROBOTICS sub-cat
+            'FINITE-ELEMENT', // often seen with analysis
+            'HIGH-RISE', // from BUILDING-TYPOLOGY-PROGRAM misc sub-cat
+            'MIXED-USE', // from BUILDING-TYPOLOGY-PROGRAM misc sub-cat
+            'USER-CENTERED', // from DESIGN-PROCESS misc sub-cat
+            'DESIGN-BUILD', // from DESIGN-PROCESS misc sub-cat
+            'DESIGN-THINKING', // from DESIGN-PROCESS misc sub-cat
+            'RESEARCH-BY-DESIGN', // from DESIGN-PROCESS misc sub-cat
+            'EVIDENCE-BASED', // from DESIGN-PROCESS misc sub-cat
+            'PERFORMANCE-DRIVEN',// from DESIGN-PROCESS misc sub-cat
+            'FREE-FORM', // from GEOMETRY-FORM misc sub-cat
+            'NON-MANIFOLD', // from GEOMETRY-FORM misc sub-cat
+            'B-REP', // from GEOMETRY-FORM misc sub-cat
+            'B-SPLINES', // from GEOMETRY-FORM misc sub-cat
+            'SHAPE-SHIFTING', // from GEOMETRY-FORM misc sub-cat
+            'GEOMETRY-BASED', // from GEOMETRY-FORM misc sub-cat
+            'FORM-ACTIVE', // from STRUCTURAL-CONCEPTS misc sub-cat
+            'VECTOR-ACTIVE', // from STRUCTURAL-CONCEPTS misc sub-cat
+            'SURFACE-ACTIVE', // from STRUCTURAL-CONCEPTS misc sub-cat
+            'BENDING-ACTIVE', // from STRUCTURAL-CONCEPTS misc sub-cat
+            'AGENT-BASED MODELING', // Keep space
+            'MULTI-MATERIAL', // from MATERIALS-PHYSICAL misc sub-cat
+            'MATERIAL-BASED', // from MATERIALS-PHYSICAL misc sub-cat
+            'USER-INTERFACE', // from INTERACTION-HCI misc sub-cat
+            'HUMAN-COMPUTER INTERACTION', // Keep space
+            'BRAIN-COMPUTER INTERFACE', // Keep space
+            'EYE-TRACKING', // from INTERACTION-HCI misc sub-cat
+            'MASS-CUSTOMIZATION', // from FABRICATION-CONSTRUCTION misc sub-cat
+            'ON-SITE', // from FABRICATION-CONSTRUCTION misc sub-cat
+            'IN-SITU', // from FABRICATION-CONSTRUCTION misc sub-cat
+            'RULE-BASED', // from COMPUTATIONAL-METHODS misc sub-cat (duplicate, OK)
+            'L-SYSTEMS', // from COMPUTATIONAL-METHODS misc sub-cat
+            'SELF-ORGANIZATION', // from COMPUTATIONAL-METHODS misc sub-cat
+            'WEB-GIS', // Keep hyphen if specific
+            'WEB-XR', // Keep hyphen if specific
+            'OPEN-SOURCE', // from SOFTWARE-TOOLS misc sub-cat
+            'PLUG-IN', // from SOFTWARE-TOOLS misc sub-cat
+            // Add any other terms you identify that must keep their hyphen
+            // Example: If HUMAN-ROBOT specifically means something different than HUMAN ROBOT, add 'HUMAN-ROBOT' here.
+            // Based on your problem, DON'T add 'HUMAN-ROBOT' initially.
+        ].map(term => term.toUpperCase())); // Ensure they are uppercase for comparison
+
+        // --- Sub-Category Mapping within Main Categories (Includes MISC group) ---
+        const subCategoryConfig = {
+            // ... other main categories remain the same ...
+
+            'FABRICATION-CONSTRUCTION-MATERIALS': {
+                'FABRICATION-ROBOTICS-CONSTRUCTION': ['ROBOTICS', 'ROBOTIC', 'CONSTRUCTION', 'FABRICATION', 'ADDITIVE', 'PHYSICAL', 'RAPID', 'CNC', 'FULL-SCALE', 'MODULAR', 'INDUSTRIAL', 'ASSEMBLY', 'PROTOTYPING', 'PROTOTYPE', 'PREFABRICATION', 'CYBER-PHYSICAL', 'TOOLPATH', 'SELF-ASSEMBLY', 'MAKER', 'WORKSHOP', 'PRINTING', '3D-PRINTING', 'PRODUCTION', 'FABLAB', 'SUBTRACTIVE', 'TOOL-BUILDING', 'DESIGN-TO-PRODUCTION', 'DESIGN-TO-FABRICATION', 'KIT-OF-PARTS', 'CRAFT', 'CRAFTSMANSHIP', 'MANUFACTURING', 'AUTOMATION', 'ASSEMBLAGE', 'KNITTING', 'WEAVING', 'BENDING', 'FOLDING', 'STEREOTOMY', 'ORIGAMI', 'FORMWORK', 'BRICKLAYING', 'CASTING', 'MOULD', 'EXTRUSION', 'SHOTCRETE', 'JOINT', 'CONNECTION', 'MASSCUSTOMIZATION', 'CUSTOM', 'BESPOKE', 'LOW-TECH', 'DIY', 'ON-SITE', 'IN-SITU', 'CAM', 'BUILDABILITY', 'PREFABRICATED', /* Added 'PREFABRICATED' */ 'INDUSTRIALISED', 'INDUSTRIALIZED' /* Also added these related terms */],
+
+                // ***** MODIFIED SECTION BELOW *****
+                'MATERIALS-BIO-NATURE-SUSTAINABILITY': [
+                    'MATERIAL', 'MATERIALITY', 'CONCRETE', 'WOOD', 'TIMBER', 'SOLID', 'CERAMIC', 'BAMBOO', 'COMPOSITE', 'CLAY', 'CARBON', 'MASONRY', 'METAL', 'GLASS', 'FIBER', 'FABRIC', 'EARTH', 'PLASTIC', 'FOAM', 'PLYWOOD', 'STEEL', 'STONE', 'PAPER', 'POLYMER', 'TEXTILE',
+                    'BIO', 'BIOMIMETICS', 'BIOMIMICRY', 'BIO-INSPIRED', 'LIVING', 'BIOMATERIALS', 'MYCELIUM', 'BIOLOGY', 'BIO-DESIGN', 'BIO-FABRICATION', 'NATURE', 'NATURAL', 'ORGANIC', 'BIO-POLYMER', 'BIOPHILIA', 'BIOMORPHIC',
+                    'GREEN', 'CIRCULAR', 'WASTE', 'RECYCLED', 'CIRCULARITY', 'ECOLOGY', 'LOW-CARBON', 'ZERO-CARBON', 'ZERO-WASTE', 'DECARBONISATION', 'SUSTAINABLE', 'LIFE-CYCLE', 'REUSABLE', 'UPCYCLING',
+                    'CELLULOSE', 'CORK', 'SAND', 'SOIL', 'MINERAL', 'PLASTER', 'REED', 'YARN', 'HYGROSCOPIC',
+                    // --- Keywords moved from MISC ---
+                    'BIODIGITAL', 'BIONIC', 'BIOPLASTIC', 'BIOMETRIC', 'BIORECEPTIVE', 'BIORETENTION', 'BIOSENSOR', 'BIOCOMPUTATION', 'BIOFABRICS', 'BIOINSPIRATION', 'BIOLOGICAL', // Assuming 'BIOLOGITAL' was a typo
+                    'BIOMECHANICS', 'BIOPOLITICS', 'BIOPOLYMERS', 'BIOSIGNALS', 'BIOCLIMATIC', 'BIODEGRADABLE', 'BIODESIGN', 'BIOTECHNOLOGY', 'ALGAE', 'BIOBASED', 'BIOINFORMED', 'BIOPHILIC', // Some might be duplicates, that's okay
+                    'WOODEN', 'FIBROUS', 'STYROFOAM', 'METALLIC', // Adding related material terms found in the list
+                    'GLASSREINFORCED' // Adding specific material type
+                ],
+                // ***** END OF MODIFIED SECTION *****
+
+                [MISC_SUB_CATEGORY_NAME]: [] // Fallback within this main category
+            },
+
+            // ... other main categories remain the same ...
+             'DESIGN-METHODS-COMPUTATION': { // Example - Define sub-cats if needed
+                'CORE-DESIGN-CONCEPTS': ['DESIGN', 'PROCESS', 'METHODS', 'METHODOLOGY', 'STRATEGY', 'CONCEPTUAL', 'CREATIVITY', 'IDEATION', 'SKETCHING', 'THINKING', 'PRACTICE', 'STUDIO'],
+                'COMPUTATIONAL-DESIGN-ALGORITHMS': ['COMPUTATION', 'PARAMETRIC', 'ALGORITHMIC', 'GENERATION', 'ALGORITHMS', 'EVOLUTIONARY', 'GENETIC', 'OPTIMIZATION', 'MULTI-OBJECTIVE', 'AGENT', 'AGENT-BASED', 'MULTI-AGENT', 'CELLULAR', 'SYSTEMS'],
+                'GEOMETRY-FORM-SHAPE': ['SHAPE', 'FORM', 'FORM-FINDING', 'GEOMETRIC', 'GEOMETRY', 'TOPOLOGY', 'PATTERN', 'PARAMETRIZATION', 'GRAMMARS'],
+                [MISC_SUB_CATEGORY_NAME]: [] // Fallback within this main category
+            },
+            'DIGITAL-AI-DATA': {
+                'AI-ML-REASONING': ['ARTIFICIAL INTELLIGENCE', 'MACHINE LEARNING', 'DEEP', 'NEURAL', 'LEARNING', 'GANS', 'CNN', 'REASONING', 'PREDICTION', 'CLASSIFICATION', 'CLUSTERING', 'INTELLIGENCE', 'EXPERT', 'KNOWLEDGE-BASED', 'CASE-BASED', 'RULE-BASED', 'LOGIC', 'SWARM', 'AGENT', 'AGENT-BASED', 'MULTI-AGENT', 'AUTOMATED', 'AUTOMATIC', 'AUTOMATION', 'TEXT', 'NLP', 'GPT', 'CHATGPT', 'TRANSFORMERS', 'SENTIMENT', 'XAI', 'RECOGNITION', 'FEATURE', 'TRAINING', 'EXPLAINABILITY'],
+                'DATA-SEMANTICS-CLOUD': ['DATA', 'BIG', 'DATABASE', 'ONTOLOGY', 'SEMANTIC', 'CLOUD', 'METADATA', 'DATASET', 'DATAFLOW', 'DATA-DRIVEN', 'GRAPH', 'INFORMATION', 'DATA-INFORMED', 'DATA-PROCESSING', 'DATA-MAPPING', 'GEOAI', 'KNOWLEDGE'],
+                'SOFTWARE-TOOLS-PROGRAMMING': ['SOFTWARE', 'TOOLS', 'PROGRAMMING', 'DISTRIBUTED', 'INTEGRATION', 'INTEGRATED', 'TECHNOLOGY', 'PLATFORM', 'PROTOCOL', 'BLOCKCHAIN', 'CODE', 'SCRIPTING', 'COMPUTER', 'OPEN', 'NETWORK'],
+                'CAD-BIM-AEC': ['DIGITAL', 'BUILDING INFORMATION MODELING', 'BIM', 'CAD', 'COMPUTER AIDED DESIGN', 'CAAD', 'COMPUTER AIDED ARCHITECTURAL DESIGN', 'COMPUTER-AIDED', 'POINT', 'POINT CLOUD', 'POINT-CLOUDS'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'VISUALIZATION-INTERACTION-XR': {
+                'XR-IMMERSIVE-PLATFORMS': ['VIRTUAL REALITY', 'VR', 'AUGMENTED REALITY', 'AR', 'MIXED', 'REALITY', 'IMMERSIVE', 'XR', 'HMD', 'OCULUS', 'HOLOLENS', 'UNITY', 'UNREAL', 'WEBXR', 'VIRTUALITY', 'REAL-TIME', 'UNITY3D', 'HOLOLENS2', 'VIRTUALIZED', 'X3D', 'VRML', 'METAVERSE', 'TELEPRESENCE'],
+                'VISUALIZATION-3D-MEDIA': ['3D', 'VISUALIZATION', 'VISUAL', 'REPRESENTATION', 'IMAGE', 'ANIMATION', 'RENDERING', 'PHOTOGRAMMETRY', 'SCAN', 'LIDAR', 'TEXTURE', 'CAMERA', 'GRAPHIC', 'COLOR', 'COLOUR', 'MEDIA', 'VIDEO', 'DISPLAY', 'PHOTO', 'MULTIMEDIA', 'POINT CLOUD', 'POINT-CLOUDS'],
+                'INTERACTION-INTERFACES-GAMES': ['INTERACTION', 'INTERACTIVE', 'INTERFACE', 'TANGIBLE', 'GAME', 'GAMIFICATION', 'MOBILE', 'MOTION', 'TRACKING', 'HCI', 'EYE-TRACKING', 'SKETCH', 'DRAWING', 'SKETCHING', 'USER-INTERFACE', 'TOUCH', 'GESTURE', 'MULTI-TOUCH'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'URBAN-SOCIAL-PLANNING': {
+                'URBAN-PLANNING-SPACE': ['URBAN', 'SPATIAL', 'SPACE', 'CITY', 'PUBLIC', 'PLANNING', 'LANDSCAPE', 'HOUSING', 'PEDESTRIAN', 'TERRITORY', 'REGION', 'SITE', 'STREET', 'NEIGHBOURHOOD', 'URBANISM', 'CITYSCAPE', 'TOWNSCAPE', 'INFRASTRUCTURE', 'TRANSPORTATION', 'MOBILITY', 'WALKABILITY', 'TRAFFIC', 'SUBWAY', 'TRANSIT', 'DENSITY', 'LAND-USE', 'ZONING', 'MASTERPLANNING', 'REGIONAL', 'REVITALIZATION', 'GENTRIFICATION', 'SLUM', 'INFORMAL SETTLEMENT', 'PLACE', 'PLACEMAKING', 'COASTAL', 'RURAL', 'URBAN-RURAL', 'NETWORK ANALYSIS'],
+                'HUMAN-SOCIAL-COGNITIVE-PARTICIPATION': ['USER', 'SOCIAL', 'HUMAN', 'PARTICIPATORY', 'PARTICIPATION', 'CULTURAL', 'BEHAVIOR', 'PERCEPTION', 'COGNITION', 'COGNITIVE', 'COLLECTIVE', 'ACCESSIBILITY', 'CROWDSOURCING', 'CO-DESIGN', 'AESTHETICS', 'HCI', 'CITIZEN', 'AFFECTIVE', 'EXPERIENCE', 'QUALITATIVE', 'OCCUPANT', 'PHENOMENOLOGY', 'SUBJECTIVE', 'ETHNOGRAPHY', 'STAKEHOLDER', 'ERGONOMICS', 'EMPATHY', 'PSYCHOLOGY', 'DISABILITY', 'COMFORT', 'WELL-BEING', 'COMMUNITY', 'INTERACTIVITY', 'EMBODIED', 'GESTURE', 'HAPTIC', 'WEARABLE', 'MULTIMODAL', 'CSCW', 'AWARENESS', 'IMMERSION', 'TEAM', 'GROUPWARE', 'COLLABORATION?', 'COMMUNICATION?'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'SIMULATION-PERFORMANCE-SUSTAINABILITY': {
+                'SIMULATION-ANALYSIS-METHODS': ['SIMULATION', 'MODEL', 'MODELING', 'ANALYSIS', 'FINITE', 'FINITE ELEMENT ANALYSIS', 'CFD', 'COMPUTATIONAL FLUID DYNAMICS', 'FEA', 'METHODOLOGY', 'METHODS', 'CASE', 'RESEARCH', 'THEORY', 'EXPERIMENTAL', 'EXPERIMENTATION', 'EXPERIMENT', 'QUANTITATIVE', 'STATISTICS', 'APPROACH', 'COMPARISON', 'ASSESSMENT', 'VALIDATION', 'FRAMEWORK', 'METAMODEL', 'BIBLIOMETRICS', 'SCIENTOMETRICS', 'STUDY', 'TEST', 'SIMULATED', 'NUMERICAL', 'PARAMETERIZATION', 'REGRESSION', 'CORRELATION', 'SENSITIVITY ANALYSIS', 'BENCHMARKING'],
+                'PERFORMANCE-SUSTAINABILITY-ENVIRONMENT': ['SDG', 'SUSTAINABLE', 'ENVIRONMENTAL', 'PERFORMANCE', 'PERFORM', 'ENERGY', 'EVALUATION', 'SOLAR', 'PERFORMANCE-BASED', 'DAYLIGHT', 'THERMAL', 'LIGHTING', 'ACOUSTIC', 'COMFORT', 'OPTIMIZATION', 'WIND', 'SHADING', 'DAYLIGHTING', 'MICROCLIMATE', 'CLIMATE', 'PASSIVE', 'EFFICIENCY', 'RESILIENCE', 'ADAPTATION', 'VENTILATION', 'INSULATION', 'COOLING', 'UHI', 'RADIATION', 'WATER', 'STORMWATER', 'LIFE-CYCLE ASSESSMENT', 'LCA', 'EMISSIVITY', 'ALBEDO', 'REFLECTANCE', 'ENERGYPLUS', 'ENVI-MET', 'LADYBUG', 'VISIBILITY', 'FIRE SAFETY', 'EVACUATION'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'WEB-NET-DB': { // Added from secondary rules
+                'WEB-ONLINE-INTERNET': ['WEB', 'ONLINE', 'INTERNET', 'PROTOCOL', 'WEBGL', 'WEBXR', 'WEBGIS', 'HTML', 'XML', 'JSON', 'API'],
+                'NETWORK-DATABASE-IOT-CLOUD': ['NETWORK', 'DATABASE', 'CLOUD', 'SERVER', 'DISTRIBUTED', 'REMOTE', 'BLOCKCHAIN', 'IOT', 'LINKED', 'PLATFORM'],
+                'PROGRAMMING-SCRIPTING-CODE': ['SOFTWARE', 'SCRIPTING', 'GRASSHOPPER', 'PYTHON', 'JAVA', 'LISP', 'CODE'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'SENSING-MAPPING-GIS': { // Added from secondary rules
+                'SENSING-SCANNING-IMAGING': ['SENSOR', 'PHOTOGRAMMETRY', 'SCAN', 'REMOTE', 'LIDAR', 'POINT CLOUD', 'IMAGE', 'AERIAL', 'SATELLITE'],
+                'MAPPING-GIS-LOCATION-NAVIGATION': ['MAPPING', 'GIS', 'GEOGRAPHIC', 'GEOGRAPHIC INFORMATION SYSTEM', 'SPATIAL', 'GPS', 'LOCATION', 'MAP', 'CARTOGRAPHY', 'SURVEY', 'TOPOGRAPHY', 'WAYFINDING', 'NAVIGATION'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'ARCHITECTURE-BUILDING-STRUCTURE': { // Added from primary keywords
+                'BUILDING-ELEMENTS-TYPOLOGY': ['ARCHITECTURE', 'BUILDING', 'FLOOR', 'OBJECT', 'FACADE', 'ENVELOPE', 'ROOF', 'WALL', 'WINDOW', 'INTERIOR', 'FURNITURE'],
+                'STRUCTURAL-SYSTEMS': ['STRUCTURE', 'STRUCTURAL', 'FRAME', 'TRUSS', 'SHELL', 'VAULT', 'DOME', 'TENSEGRITY', 'TENSILE'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'KNOWLEDGE-EDUCATION-COLLABORATION': { // Added from primary keywords
+                'KNOWLEDGE-INFO-COMMUNICATION': ['KNOWLEDGE', 'INFORMATION', 'COMMUNICATION', 'PROTOCOL'],
+                'EDUCATION-PEDAGOGY': ['EDUCATION', 'LEARNING', 'TEACHING', 'PEDAGOGY', 'STUDIO', 'CURRICULUM'],
+                'COLLABORATION-TEAMWORK': ['COLLABORATION', 'COLLABORATIVE', 'TEAM', 'GROUPWARE', 'CSCW'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+            'OTHER-CONCEPTS': { // Added from primary keywords
+                'SMART-ADAPTIVE-DYNAMIC': ['SMART', 'RESPONSIVE', 'ADAPTIVE', 'DYNAMIC', 'KINETIC'],
+                'GENERAL-CONCEPTS-QUALIFIERS': ['COMPLEX', 'NATURAL', 'NEW', 'EARLY', 'ENGINEERING', 'CONSTRAINTS', 'MASS', 'HYBRID', 'DECISION', 'TIME', 'FUTURE', 'HISTORY'],
+                [MISC_SUB_CATEGORY_NAME]: []
+            },
+
+            // --- Sub-categories for MISCELLANEOUS (uncategorized) ---
+            [MISC_MAIN_CATEGORY_NAME]: {
+                'DESIGN-PROCESS-METHODOLOGY': ['SYNTHESIS', 'PROBLEM', 'SEARCH', 'PRACTICE', 'WORKFLOW', 'CUSTOMIZATION', 'EXPLORATION', 'IDEATION', 'CREATIVE', 'INNOVATION', 'INNOVATIVE', 'SPECULATIVE', 'ITERATIVE', 'HEURISTICS', 'DESIGN-BUILD', 'DESIGN-THINKING', 'RESEARCH-BY-DESIGN', 'EVIDENCE-BASED', 'PERFORMANCE-DRIVEN', 'USER-CENTERED', 'PARTICIPATORY?', 'CO-DESIGN?', 'DECISION-MAKING', 'STRATEGIC', 'FRAMEWORK', 'APPROACH', 'METHODOLOGY', 'PROCESS?', 'PROJECT', 'TASK', 'ACTIVITY', 'PRACTICE-BASED', 'FORMATIVE', 'PRE-DESIGN', 'SCHEMATIC', 'CONCEPTUAL?', 'DETAIL', 'POST-PROCESSING', 'REFLECTION', 'CRITIQUE', 'REVERSE ENGINEERING', 'DECONSTRUCTION', 'RECONSTRUCTION', 'ABDUCTION', 'INDUCTION', 'DEDUCTION', 'LINKOGRAPHY', 'TRIZ', 'FBS', 'BRAINSTORMING', 'MIND-MAP'],
+                'GEOMETRY-FORM-SHAPE': ['SURFACE', 'DISCRETE', 'COMPLEXITY', 'CURVED', 'POLYGONS', 'MESH', 'VOXEL', 'SYMMETRY', 'TESSELLATION', 'GRID', 'LATTICE', 'VOID', 'SHELL', 'NON-MANIFOLD', 'B-REP', 'CURVES', 'FREE-FORM', 'FREEFORM', 'LINEAR', 'PLANAR', 'VOLUMETRIC', 'GEOMETRIC', 'TOPOLOGICAL', 'MORPHOLOGY', 'MORPHOGENESIS', 'CONFIGURATION', 'COMBINATORICS', 'POLYHEDRA', 'FOLDING', 'ORIGAMI', 'NURBS', 'B-SPLINES', 'BEZIER', 'SUBDIVISION', 'OFFSET', 'DECOMPOSITION', 'AGGREGATION', 'DISCRETIZATION', 'TRIANGULATION', 'PACKING', 'TILING', 'QUADTREE', 'OCTREE', 'VORONOI', 'DELAUNAY', 'CONVEX', 'NON-CONVEX', 'BOUNDARY', 'CONFORMAL', 'APPROXIMATION', 'INTERPOLATION', 'CURVATURE', 'SHAPE-SHIFTING', 'MORPHING', 'FRACTAL', 'MINIMAL SURFACE', 'RULED SURFACE', 'DEVELOPABLE SURFACE', 'DOUBLE-CURVED', 'GEOMETRY-BASED', 'DIMENSIONALITY', 'PROPORTION', 'SCALE', 'RATIO', 'GOLDEN RATIO', 'AUXETIC', 'ANAMORPHOSIS', 'KIRIGAMI'],
+                'STRUCTURAL-CONCEPTS-TYPES': ['LIGHTWEIGHT', 'TENSEGRITY', 'RECIPROCAL', 'DEPLOYABLE', 'TRANSFORMABLE', 'KINETIC', 'PNEUMATIC', 'TENSILE', 'COMPRESSION', 'STRESS', 'LOAD', 'SUPPORT', 'FRAME', 'TRUSS', 'GRIDSHELL', 'SHELL', 'VAULT', 'DOME', 'CATENARY', 'FUNICULAR', 'BENDING-ACTIVE', 'CABLE', 'MEMBRANE', 'INFLATABLE', 'SPACE-FRAME', 'HIGH-RISE', 'TALL BUILDING', 'BRIDGE', 'ROOF STRUCTURE', 'FACADE STRUCTURE', 'FOLDED PLATE', 'LAMINATED', 'GLULAM', 'CLT', 'STRUCTURE', 'STABILITY', 'RIGID', 'ELASTIC', 'COMPLIANT', 'EQUILIBRIUM', 'OPTIMUM STRUCTURE', 'FORM-ACTIVE', 'VECTOR-ACTIVE', 'SURFACE-ACTIVE'],
+                'PERFORMANCE-SIMULATION-MISC': ['PERFORMATIVE', 'ACOUSTIC', 'VISIBILITY', 'EFFICIENCY', 'QUALITY', 'RESILIENCE', 'ROBUSTNESS', 'FUNCTIONALITY', 'EFFECTIVENESS', 'RELIABILITY', 'ACCURACY', 'PRECISION', 'FEASIBILITY', 'SUITABILITY', 'VALIDITY', 'PERCEIVED', 'SUBJECTIVITY', 'SIMULATION', 'ANALYSIS', 'EVALUATION', 'VALIDATION', 'ASSESSMENT', 'COMPARISON', 'OPTIMIZATION', 'WIND TUNNEL', 'CFD', 'FEA', 'ENERGY ANALYSIS', 'DAYLIGHT ANALYSIS', 'THERMAL ANALYSIS', 'COMFORT ANALYSIS', 'SAFETY ANALYSIS', 'FIRE SIMULATION', 'EVACUATION SIMULATION', 'STRUCTURAL ANALYSIS', 'AGENT-BASED MODELING?', 'PARAMETRIC ANALYSIS', 'SENSITIVITY ANALYSIS'],
+                'MATERIALS-PHYSICAL-PROPERTIES-MISC': ['SOLID', 'SOFT', 'HARD', 'RIGID', 'ELASTIC', 'FLEXIBLE', 'COMPLIANT', 'BENDING', 'TEXTURE', 'SURFACE PROPERTY', 'OPTICAL', 'THERMAL PROPERTY', 'ACOUSTIC PROPERTY', 'HYGROSCOPIC', 'POROUS', 'ANISOTROPIC', 'HOMOGENEOUS', 'HETEROGENEOUS', 'GRADIENT', 'MULTI-MATERIAL', 'MATERIAL-BASED', 'COMPOSITE', 'TEXTILE', 'CERAMIC', 'CONCRETE', 'WOOD', 'METAL', 'GLASS', 'STONE', 'EARTH', 'PLASTIC', 'FOAM', 'PAPER', 'CORK', 'SAND', 'SOIL', 'MINERAL', 'PLASTER', 'REED', 'CLOTH', 'YARN', 'FIBRE', 'RUBBER', 'CELLULOSE', 'REINFORCEMENT', 'BINDER', 'PASTE', 'GRANULAR', 'POWDER', 'LIQUID', 'PHASE CHANGE'],
+                'FABRICATION-CONSTRUCTION-PROCESSES': ['KNITTING', 'WEAVING', 'BENDING', 'FOLDING', 'STEREOTOMY', 'FORMWORK', 'BRICKLAYING', 'CASTING', 'MOULD', 'EXTRUSION', 'SHOTCRETE', 'JOINTING', 'CONNECTION', 'ASSEMBLY', 'MODULAR', 'PREFABRICATION', 'CRAFT', 'MASSCUSTOMIZATION', 'CUSTOM', 'BESPOKE', 'LOW-TECH', 'DIY', 'ON-SITE', 'IN-SITU', 'ADDITIVE MANUFACTURING', 'SUBTRACTIVE MANUFACTURING', 'CNC MACHINING', 'ROBOTIC FABRICATION', 'CAM', 'TOOLPATH', 'PRINTING', 'MANUFACTURING', 'PRODUCTION', 'AUTOMATION', 'AEC', 'CIVIL ENGINEERING', 'CONSTRUCTION MANAGEMENT', 'SITE OPERATIONS', 'LOGISTICS', 'TOLERANCE', 'ERROR', 'BUILDABILITY', 'PROTOTYPING?', 'MAKING?'],
+                'INTERACTION-HCI-UX': ['INTERACTIVITY', 'UBIQUITOUS', 'EMBODIED', 'GESTURE', 'HAPTIC', 'WEARABLE', 'MULTIMODAL', 'CSCW', 'AWARENESS', 'IMMERSION', 'PRESENCE', 'TELEPRESENCE', 'EXPERIENCE', 'INTUITION', 'MEMORY', 'MENTAL', 'COGNITION', 'PERCEPTION', 'AFFECTIVE', 'FEEDBACK', 'USER-INTERFACE', 'TANGIBLE', 'AUGMENTED REALITY', 'VIRTUAL REALITY', 'MIXED REALITY', 'CYBERSPACE', 'METAVERSE', 'AVATAR', 'USER EXPERIENCE', 'UX', 'HUMAN-COMPUTER INTERACTION', 'HCI', 'BRAIN-COMPUTER INTERFACE', 'BCI', 'EYE-TRACKING', 'GAZE', 'VOICE CONTROL'],
+                'SOCIAL-CULTURAL-CONTEXT-MISC': ['LOCAL', 'GLOBAL', 'REGIONAL', 'TRADITIONAL', 'VERNACULAR', 'ISLAMIC', 'CHINESE', 'BRAZILIAN', 'LATIN', 'KOREAN', 'ITALIAN', 'JAPANESE', 'DUTCH', 'AMERICAN', 'PORTUGUESE', 'AFRICAN', 'ASIAN', 'EUROPEAN', 'INTERNATIONAL', 'GLOBALISATION', 'CULTURE', 'HERITAGE', 'HISTORY', 'HISTORICAL', 'ARCHAEOLOGY', 'CONSERVATION', 'RESTORATION', 'PRESERVATION', 'AUTHENTICITY', 'IDENTITY', 'SHARED', 'COMMON', 'INCLUSIVE', 'COMMUNITY', 'SOCIETY', 'ANTHROPOLOGY', 'ETHNOGRAPHY', 'POPULAR CULTURE', 'SUB-CULTURE', 'DEMOGRAPHICS', 'LIFESTYLE', 'RITUAL', 'RELIGION', 'MYTH', 'SYMBOLISM', 'POLITICS', 'GOVERNANCE', 'POLICY', 'ECONOMICS', 'MARKET', 'INDUSTRY', 'SECTOR', 'PROFESSIONALS', 'STAKEHOLDER', 'CITIZEN', 'PARTICIPANT', 'CROWD', 'PUBLIC OPINION'],
+                'URBAN-SPATIAL-ANALYSIS': ['STREET', 'LAND', 'SITE', 'NEIGHBOURHOOD', 'URBANISM', 'CITYSCAPE', 'TOWNSCAPE', 'INFRASTRUCTURE', 'TRANSPORTATION', 'MOBILITY', 'WALKABILITY', 'TRAFFIC', 'SUBWAY', 'TRANSIT', 'DENSITY', 'LAND-USE', 'ZONING', 'MASTERPLANNING', 'REVITALIZATION', 'GENTRIFICATION', 'SLUM', 'INFORMAL SETTLEMENT', 'PUBLIC SPACE', 'PLACE', 'PLACEMAKING', 'TERRITORY', 'REGION', 'COASTAL', 'RURAL', 'URBAN-RURAL', 'NETWORK ANALYSIS', 'VISIBILITY ANALYSIS', 'ISOVIST', 'SPACE SYNTAX', 'ACCESSIBILITY ANALYSIS', 'CONNECTIVITY', 'CENTRALITY', 'PROXIMITY', 'VIEWSHED'],
+                'BUILDING-TYPOLOGY-PROGRAM': ['FACADE', 'SHELL', 'ENVELOPE', 'SKIN', 'ROOF', 'WALL', 'COLUMN', 'BEAM', 'WINDOW', 'OPENING', 'CIRCULATION', 'INTERIOR', 'FURNITURE', 'TALL', 'HIGH-RISE', 'PAVILION', 'HOUSE', 'HOUSING', 'OFFICE', 'SCHOOL', 'UNIVERSITY', 'HOSPITAL', 'AIRPORT', 'STADIUM', 'THEATER', 'SHOPPING', 'COMMERCIAL', 'RESIDENTIAL', 'FACILITY', 'MUSEUM', 'LIBRARY', 'LABORATORY', 'WORKSHOP', 'STUDIO', 'CABIN', 'TOWER', 'BRIDGE', 'TUNNEL', 'PROGRAM', 'FUNCTION', 'USE', 'MIXED-USE', 'ADAPTIVE REUSE', 'RENOVATION', 'RETROFIT', 'APARTMENT', 'DWELLING', 'SHELTER', 'ROOM', 'COURTYARD'],
+                'COMPUTATIONAL-METHODS-ALGORITHMS': ['ALGORITHM', 'COMPUTATION', 'PARAMETERIZATION', 'HEURISTICS', 'RULE-BASED', 'BOOLEAN', 'FUZZY', 'STOCHASTIC', 'RANDOMNESS', 'AGENT', 'SWARM', 'EMERGENCE', 'SELF-ORGANIZATION', 'CELLULAR AUTOMATA', 'L-SYSTEMS', 'GENETIC ALGORITHM', 'EVOLUTIONARY COMPUTATION', 'NEURAL NETWORK', 'AI', 'ML', 'DATA MINING', 'INFORMATION RETRIEVAL', 'CYBERNETICS', 'COMPLEX SYSTEMS', 'DISCRETE MATH', 'PROCEDURAL MODELING', 'GENERATIVE DESIGN', 'SCRIPTING?', 'CODING?', 'INTEGER PROGRAMMING', 'LINEAR PROGRAMMING', 'CONSTRAINT SATISFACTION', 'BAYESIAN INFERENCE', 'MARKOV CHAIN'],
+                'SENSING-MONITORING-SYSTEMS': ['SENSOR', 'ACTUATOR', 'MECHATRONICS', 'EMBEDDED SYSTEMS', 'AMBIENT INTELLIGENCE', 'PERVASIVE COMPUTING', 'SENSATE', 'RESPONSIVE', 'ADAPTIVE', 'KINETIC', 'PROGRAMMABLE', 'CONTROL SYSTEMS', 'FEEDBACK LOOPS', 'RFID', 'GPS', 'LOCALIZATION', 'TRACKING', 'MONITORING', 'MEASUREMENT', 'INSTRUMENTATION', 'INTERNET OF THINGS', 'IOT', 'SMART DEVICES', 'WEARABLE COMPUTING', 'CYBER-PHYSICAL SYSTEMS', 'ARDUINO', 'RASPBERRY PI'],
+                'EDUCATION-COLLABORATION-PRACTICE': ['STUDIO', 'CURRICULUM', 'EDUCATIONAL', 'PEDAGOGICAL', 'DIDACTIC', 'LEARNING', 'TEACHING', 'STUDENT', 'ACADEMIC', 'SCIENCE', 'RESEARCH', 'PRACTICE', 'INNOVATION', 'PROFESSIONALS', 'ARCHITECTS', 'ENGINEERS', 'DESIGNERS', 'WORKSHOP', 'COURSE', 'TUTORIAL', 'SEMINAR', 'CONFERENCE', 'PUBLICATION', 'KNOWLEDGE MANAGEMENT', 'TEAM', 'GROUPWARE', 'CSCW', 'COOPERATION', 'COORDINATION', 'COLLABORATION', 'COMMUNICATION', 'SHARED WORKSPACE', 'REMOTE COLLABORATION', 'VIRTUAL STUDIO', 'BLENDED LEARNING', 'MOOC', 'PBL', 'PROJECT-BASED LEARNING', 'SKILLS', 'EXPERTISE', 'MENTORING'],
+                'SOFTWARE-TOOLS-PLATFORMS-MISC': ['GOOGLE', 'REVIT', 'AUTOCAD', 'ENERGYPLUS', 'KINECT', 'MAXSCRIPT', 'RHINOCEROS', 'GRASSHOPPER', 'PYTHON', 'JAVA', 'LISP', 'IFC', 'OPEN-SOURCE', 'HARDWARE', 'SOFTWARE', 'PLATFORM', 'PLUG-IN', 'APP', 'API', 'CAD', 'BIM', 'CAM', 'CAE', 'GIS', 'SCRIPTING', 'CODING', 'VRML', 'X3D', 'UNITY', 'UNREAL', 'BLENDER', 'MAYA', 'HOUDINI', 'SKETCHUP', 'ARCHICAD', 'VECTORWORKS', 'OPENGL', 'WEBGL', 'DIRECTX', 'OPERATING SYSTEM', 'DATABASE?', 'CLOUD COMPUTING?'],
+                'ART-MEDIA-REPRESENTATION-MISC': ['ART', 'STYLE', 'AESTHETICS', 'ORNAMENT', 'INSTALLATION', 'SCULPTURE', 'FILM', 'CINEMA', 'NARRATIVE', 'STORYTELLING', 'MEDIA', 'MULTIMEDIA', 'PHOTOGRAPHY', 'IMAGE PROCESSING', 'VIDEO PROCESSING', 'ANIMATION', 'RENDERING', 'VISUALIZATION', 'REPRESENTATION', 'DIAGRAM', 'SKETCH', 'DRAWING', 'GRAPHIC DESIGN', 'COLOR THEORY', 'DISPLAY TECHNOLOGY', 'NOTATION', 'PROJECTION', 'PERSPECTIVE', 'ANAMORPHOSIS', 'ILLUSION', 'INFOGRAPHICS', 'DATA VISUALIZATION', 'UI DESIGN', 'UX DESIGN?', 'SOUND DESIGN', 'MUSIC COMPOSITION'],
+                'STRUCTURAL-FORM-FINDING': ['TENSEGRITY', 'RECIPROCAL STRUCTURES', 'DEPLOYABLE STRUCTURES', 'TRANSFORMABLE STRUCTURES', 'FOLDED STRUCTURES', 'FRAME STRUCTURES', 'TRUSS SYSTEMS', 'GRIDSHELLS', 'SHELL STRUCTURES', 'VAULTS', 'DOMES', 'CATENARY STRUCTURES', 'FUNICULAR STRUCTURES', 'BENDING-ACTIVE STRUCTURES', 'CABLE STRUCTURES', 'MEMBRANE STRUCTURES', 'INFLATABLE STRUCTURES', 'SPACE-FRAMES', 'STRUCTURAL OPTIMIZATION', 'FORM-FINDING', 'TOPOLOGY OPTIMIZATION', 'STRUCTURAL ANALYSIS?', 'STABILITY ANALYSIS'],
+                'TIME-PROCESS-DYNAMICS': ['FUTURE', 'HISTORY', 'TEMPORAL', 'LIFE-CYCLE', 'PHASE', 'SEQUENCE', 'DURATION', 'EVENT', 'REAL-TIME', 'DYNAMIC', 'EMERGENT', 'EVOLUTION', 'GROWTH', 'CHANGE', 'TRANSFORMATION', 'ADAPTATION', 'PROCESS', 'CHRONOLOGY', 'TIMELINE', 'VERSIONING', 'HISTORY LOGGING', 'SIMULATION?', '4D MODELING', 'ANIMATION?', 'KINETICS'],
+                'ABSTRACT-QUALIFIERS-RELATIONS': ['REAL', 'FULL', 'SOFT', 'HARD', 'HIDDEN', 'HIGH', 'LOW', 'DIRECT', 'VARIABLE', 'GLOBAL', 'LOCAL', 'LINEAR', 'NON-LINEAR', 'PARALLEL', 'ABSTRACT', 'GENERIC', 'BASIC', 'MULTIPLE', 'NEXT', 'FIRST', 'SECOND', 'MAIN', 'PRIMARY', 'SECONDARY', 'TERTIARY', 'INTERNAL', 'EXTERNAL', 'VIRTUAL', 'PHYSICAL', 'DIGITAL', 'ANALOG', 'DISCRETE', 'CONTINUOUS', 'SYNCHRONOUS', 'ASYNCHRONOUS', 'STATIC', 'ACTIVE', 'PASSIVE', 'OPEN', 'CLOSED', 'SHARED', 'COMMON', 'PUBLIC', 'PRIVATE', 'FORMAL', 'INFORMAL', 'STANDARD', 'NON-STANDARD', 'CUSTOM', 'BESPOKE', 'RELATIONAL', 'HIERARCHICAL', 'NETWORKED', 'DISTRIBUTED', 'CENTRALIZED', 'DECENTRALIZED', 'INTEGRATED', 'MODULAR', 'COMPONENT-BASED', 'OBJECT-ORIENTED', 'SYSTEMIC', 'HOLISTIC', 'PART-TO-WHOLE', 'SCALE', 'RATIO', 'PROPORTION', 'SIMILARITY', 'DIFFERENCE', 'EQUIVALENCE', 'ORDER', 'CHAOS', 'RANDOMNESS', 'PATTERN?', 'SYMMETRY?', 'RECURSION', 'ITERATION', 'ATTRIBUTE', 'FEATURE', 'PROPERTY', 'QUALITY', 'QUANTITY', 'DEGREE', 'LEVEL', 'RANGE', 'LIMIT', 'THRESHOLD', 'CONSTRAINT', 'OBJECTIVE', 'GOAL', 'CRITERIA', 'FACTOR', 'VARIABLE', 'PARAMETER', 'INPUT', 'OUTPUT', 'STATE', 'CONDITION', 'CONTEXT', 'ENVIRONMENT', 'SITUATION', 'SCENARIO'],
+                // --- Catch-all for truly uncategorized items from the MISC group ---
+                [FINAL_UNCATEGORIZED_SUB_NAME]: [] // Initialize, keywords will be added if they don't fit other MISC sub-cats
+            }
+        };
+
+
+        // Create a reverse map for quick lookup: keyword -> subCategoryName
+        const keywordToSubCategoryMap = {};
+        for (const mainCat in subCategoryConfig) {
+            keywordToSubCategoryMap[mainCat] = {};
+            // Ensure the default MISC_SUB_CATEGORY exists for every main category
+            if (!subCategoryConfig[mainCat][MISC_SUB_CATEGORY_NAME]) {
+                subCategoryConfig[mainCat][MISC_SUB_CATEGORY_NAME] = [];
+            }
+            for (const subCat in subCategoryConfig[mainCat]) {
+                // Don't process the keyword list for the final fallback category
+                if (subCat === FINAL_UNCATEGORIZED_SUB_NAME) continue;
+
+                subCategoryConfig[mainCat][subCat].forEach(keyword => {
+                    // Remove trailing '?' for lookup
+                    const cleanKeyword = keyword.replace(/\?$/, '');
+                    const canonicalKeyword = getCanonicalName(cleanKeyword);
+
+                    // Map canonical name
+                    if (!keywordToSubCategoryMap[mainCat][canonicalKeyword]) {
+                        keywordToSubCategoryMap[mainCat][canonicalKeyword] = subCat;
+                    }
+                    // Map original uppercase name if different
+                    const upperKeyword = cleanKeyword.toUpperCase();
+                    if (upperKeyword !== canonicalKeyword && !keywordToSubCategoryMap[mainCat][upperKeyword]) {
+                        keywordToSubCategoryMap[mainCat][upperKeyword] = subCat;
+                    }
+                    // Map the exact keyword (case-insensitive) as defined in the list
+                    if (!keywordToSubCategoryMap[mainCat][upperKeyword]) {
+                        keywordToSubCategoryMap[mainCat][upperKeyword] = subCat;
+                    }
+                });
+            }
+        }
+
+
+        // --- Simple English Stemmer (No changes) ---
+        function simpleStemmer(word) { const stemMappings = { 'STRUCTUR': 'STRUCTURE', 'STRUCTURES': 'STRUCTURE', 'STRUCTURAL': 'STRUCTURE', 'COMPUTAT': 'COMPUTATION', 'COMPUTING': 'COMPUTATION', 'COMPUTATIONAL': 'COMPUTATION', 'ANALYS': 'ANALYSIS', 'ANALYSES': 'ANALYSIS', 'ANALYTICAL': 'ANALYSIS', 'GENERAT': 'GENERATION', 'GENERATIVE': 'GENERATION', 'DESIGNING': 'DESIGN', 'DESIGNS': 'DESIGN', 'MODEL': 'MODELING', 'MODELS': 'MODELING', 'MODELLING': 'MODELING', 'VISUALIZ': 'VISUALIZATION', 'VISUALISATION': 'VISUALIZATION', 'OPTIMIZ': 'OPTIMIZATION', 'OPTIMISATION': 'OPTIMIZATION', 'PARAMETRIZ': 'PARAMETRIZATION', 'PARAMETERISATION': 'PARAMETRIZATION', 'COLLABORAT': 'COLLABORATION', 'COLLABORATIVE': 'COLLABORATION', 'INTERACT': 'INTERACTION', 'INTERACTIVE': 'INTERACTION', 'FABRICAT': 'FABRICATION', 'EDUCAT': 'EDUCATION', 'PEDAGOGY': 'EDUCATION', 'TEACHING': 'EDUCATION', 'LEARNING': 'EDUCATION', 'PERFORM': 'PERFORMANCE', 'PERFORMANCES': 'PERFORMANCE', 'SUSTAINABLE': 'SUSTAINABILITY', 'SUSTAINABILITIES': 'SUSTAINABILITY', 'ROBOT': 'ROBOTICS', 'ROBOTIC': 'ROBOTICS', 'ARCHITECTUR': 'ARCHITECTURE', 'ARCHITECTURES': 'ARCHITECTURE', 'ARCHITECTURAL': 'ARCHITECTURE', 'KNOWLEDGES': 'KNOWLEDGE', 'INFORMATION': 'KNOWLEDGE', 'BEHAVIOR': 'BEHAVIOR', 'BEHAVIORS': 'BEHAVIOR', 'BEHAVIOURAL': 'BEHAVIOR', 'MATERIAL': 'MATERIAL', 'MATERIALS': 'MATERIAL', 'VIRTUAL': 'VIRTUAL REALITY', 'AUGMENTED': 'AUGMENTED REALITY', 'MACHINE': 'MACHINE LEARNING', 'ARTIFICIAL': 'ARTIFICIAL INTELLIGENCE', 'URBAN': 'URBAN', 'CITY': 'CITY', 'CITIES': 'CITY', 'SPATIAL': 'SPACE', 'GEOGRAPHIC': 'GEOGRAPHIC INFORMATION SYSTEM', 'GEOGRAPHICAL': 'GEOGRAPHIC INFORMATION SYSTEM' }; word = word.toUpperCase(); if (stemMappings[word]) return stemMappings[word]; if (word.endsWith('IZATION') && word.length > 7) { let base = word.slice(0, -7) + 'IZE'; return stemMappings[base] || base; } if (word.endsWith('ISATION') && word.length > 7) { let base = word.slice(0, -7) + 'IZE'; return stemMappings[base] || base; } if (word.endsWith('TIONAL') && word.length > 6) { let base = word.slice(0, -6); return stemMappings[base] || base; } if (word.endsWith('ATIONAL') && word.length > 7) { let base = word.slice(0, -7); return stemMappings[base] || base; } if (word.endsWith('TION') && word.length > 5) { let base = word.slice(0, -4); return stemMappings[base] || base; } if (word.endsWith('SION') && word.length > 5) { let base = word.slice(0, -4); return stemMappings[base] || base; } if (word.endsWith('MENT') && word.length > 5) { let base = word.slice(0, -4); return stemMappings[base] || base; } if (word.endsWith('ABILITY') && word.length > 7) { let base = word.slice(0, -7); return stemMappings[base] || base; } if (word.endsWith('IBILITY') && word.length > 7) { let base = word.slice(0, -7); return stemMappings[base] || base; } if (word.endsWith('ING') && word.length > 4) { let base = word.slice(0, -3); if (base.length > 2 && base.endsWith(base.charAt(base.length - 1)) && !['L', 'S', 'Z'].includes(base.slice(-1))) { base = base.slice(0, -1); } if (base.endsWith('E') && base.length > 2 && !['AE', 'EE', 'IE', 'OE', 'UE'].includes(base.slice(-2))) { if (stemMappings[base.slice(0, -1)]) return stemMappings[base.slice(0, -1)]; } return stemMappings[base] || (base.length > 2 ? base : word); } if (word.endsWith('AL') && word.length > 3) { let base = word.slice(0, -2); return stemMappings[base] || base; } if (word.endsWith('ER') && word.length > 3) { let base = word.slice(0, -2); return stemMappings[base] || base; } if (word.endsWith('OR') && word.length > 3) { let base = word.slice(0, -2); return stemMappings[base] || base; } if (word.endsWith('IVE') && word.length > 4) { let base = word.slice(0, -3); return stemMappings[base] || base; } if (word.endsWith('S')) { if (word.endsWith('IES') && word.length > 3) { let base = word.slice(0, -3) + 'Y'; return stemMappings[base] || base; } if (word.endsWith('ES') && word.length > 3) { let base = word.slice(0, -2); if (word.endsWith('SES') && stemMappings[base + 'IS']) return stemMappings[base + 'IS']; if (['S', 'X', 'Z', 'H'].includes(word.charAt(word.length - 3))) { return stemMappings[base] || base; } else { base = word.slice(0, -1); return stemMappings[base] || base; } } if (!word.endsWith('SS') && !word.endsWith('US') && !word.endsWith('IS') && word.length > 2) { let base = word.slice(0, -1); return stemMappings[base] || base; } } return word; }
+
+        // --- getCanonicalName (No changes) ---
+        function getCanonicalName(name) { const upperName = name.toUpperCase(); if (synonymMap[upperName]) { return synonymMap[upperName]; } const words = upperName.split(" ").filter(w => w); if (words.length === 0) return upperName; const fullStem = simpleStemmer(upperName); if (fullStem !== upperName) return fullStem; const lastWord = words[words.length - 1]; const stemmedLastWord = simpleStemmer(lastWord); if (words.length > 1) { const firstPart = words.slice(0, -1).join(" "); if (stemmedLastWord !== lastWord && stemmedLastWord.length > 1) { const potentialStem = `${firstPart} ${stemmedLastWord}`; if (synonymMap[potentialStem]) return synonymMap[potentialStem]; return potentialStem; } else { return upperName; } } else { return (stemmedLastWord !== lastWord && stemmedLastWord.length > 1) ? stemmedLastWord : upperName; } }
+
+        // --- Find Secondary Group Helper (No changes) ---
+        function findSecondaryGroup(nodeName) { const upperNodeName = nodeName.toUpperCase(); const canonicalNodeName = getCanonicalName(nodeName); for (const rule of secondaryGroupRules) { if (upperNodeName === rule.name || canonicalNodeName === rule.name) { return rule.name; } if (rule.keywords.some(kw => upperNodeName.includes(kw) || canonicalNodeName.includes(kw))) { if (!keywordToGroupMap[upperNodeName] && !keywordToGroupMap[canonicalNodeName]) { return rule.name; } else { if (upperNodeName === rule.name || canonicalNodeName === rule.name) return rule.name; } } } return null; }
+
+        // --- Event Listeners ---
+        dropArea.addEventListener("dragover", (e) => { e.preventDefault(); dropArea.classList.add("bg-light"); });
+        dropArea.addEventListener("dragleave", () => { dropArea.classList.remove("bg-light"); });
+        dropArea.addEventListener("drop", (e) => { e.preventDefault(); dropArea.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0]); });
+        dropArea.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+        searchButton.addEventListener("click", performSearch);
+        searchInput.addEventListener("keypress", (e) => { if (e.key === "Enter") { performSearch(); } });
+        toggleAllBtn.addEventListener("click", toggleAll);
+        untoggleAllBtn.addEventListener("click", untoggleAll);
+        downloadJsonBtn.addEventListener("click", downloadJson);
+
+
+        // --- File Handling Orchestrator ---
+        function handleFile(file) {
+            if (!file || !file.name.endsWith(".json")) {
+                alert("Please upload a valid .json file."); return;
+            }
+            loadingMessage.style.display = "flex";
+            loadingMessage.style.alignItems = "center";
+            loadingMessage.style.justifyContent = "center";
+            treeContainer.innerHTML = "";
+            statisticsContainer.innerHTML = "";
+            searchInput.value = "";
+            searchFeedback.textContent = "";
+            currentProcessedTreeData = null; // Reset processed tree data
+            paperDetailsMap = new Map(); // Reset paper details
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error("JSON data must be an array of objects.");
+
+                    // Process input data and populate paperDetailsMap
+                    const processedData = data.map((item, index) => {
+                        const title = item.Title || `Untitled_${index}`;
+                        const originalKeywords = Array.isArray(item.Keywords) ? item.Keywords.join(', ') : (item.Keywords || '');
+
+                        // --- START: Modified Keyword Processing ---
+                        const rawKeywordsList = (typeof item.Keywords === 'string'
+                            ? item.Keywords.split(/[,;]+/) // Split by comma or semicolon
+                            : Array.isArray(item.Keywords) ? item.Keywords.map(k => String(k)) : []
+                        );
+
+                        const processedKeywords = rawKeywordsList
+                            .map(k => {
+                                let processedK = k.trim().toLowerCase(); // Trim and lowercase first
+                                if (!processedK) return ''; // Skip empty
+
+                                // Split into words, process hyphens unless kept, join back
+                                const words = processedK.split(' ');
+                                const processedWords = words.map(w => {
+                                    if (w.includes('-')) {
+                                        const wUpper = w.toUpperCase();
+                                        // If it has a hyphen BUT should NOT be kept, replace hyphens with space
+                                        if (!keepHyphenatedTerms.has(wUpper)) {
+                                            return w.replace(/-/g, ' ');
+                                        }
+                                        // Otherwise (it should be kept), return the original word
+                                        return w;
+                                    }
+                                    // No hyphen, return original word
+                                    return w;
+                                });
+                                // Join back potentially modified words, then normalize whitespace
+                                return processedWords.join(' ').replace(/\s+/g, ' ').trim();
+                            })
+                            .filter(k => k && /^[a-z0-9\s\-\(\)]+$/.test(k) && k.length > 1) // Basic validation + allow parenthesis, ignore single chars
+                            .map(k => k.toUpperCase()) // Convert to uppercase AFTER processing hyphens/spaces
+                            .filter((v, i, a) => a.indexOf(v) === i); // Unique processed keywords per title
+                        // --- END: Modified Keyword Processing ---
+
+
+                        if (!paperDetailsMap.has(title)) {
+                            paperDetailsMap.set(title, {
+                                name: title,
+                                value: 1,
+                                keywords: originalKeywords,
+                                summary: item.Summary || ""
+                            });
+                        } else {
+                            console.warn(`Duplicate title found: "${title}". Using first instance.`);
+                        }
+
+                        return {
+                            Title: title,
+                            KeywordsProcessed: processedKeywords, // Use the newly processed keywords
+                        };
+                    });
+
+                    const initialTree = buildKeywordHierarchy_v2(processedData);
+                    const intermediateTree = groupSynonyms(initialTree);
+                    let finalCategorizedTree = groupTopLevelNodesByCategory(intermediateTree); // Get the categorized tree
+
+                    // *** NEW STEP: Create the specific BIO subgroup ***
+                    // This RELIES on the BIO keywords being correctly added to the
+                    // 'MATERIALS-BIO-NATURE-SUSTAINABILITY' list in subCategoryConfig first.
+                    finalCategorizedTree = createBioSubgroup(finalCategorizedTree); // Apply the refinement
+
+                    // **APPLY SINGLE ARTICLE GROUPING**: Modify the refined tree
+                    const treeWithSingleArticleGroups = applySingleArticleGrouping(finalCategorizedTree);
+
+                    currentProcessedTreeData = treeWithSingleArticleGroups; // Store final structure
+
+                    const treeElement = generateDeepHierarchy(currentProcessedTreeData); // Build HTML from the final structure
+                    displayTree(treeElement);
+                    displayStatistics(initialTree, intermediateTree, currentProcessedTreeData, processedData); // Use final structure for stats
+
+                } catch (err) {
+                    alert("Error processing file: " + err.message);
+                    console.error(err);
+                } finally {
+                    loadingMessage.style.display = "none";
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Build Initial Hierarchy v2 (Stores Titles at each level) ---
+        function buildKeywordHierarchy_v2(processedData) {
+            const tree = {};
+            processedData.forEach((item) => {
+                if (!item.Title || !item.KeywordsProcessed) return;
+                item.KeywordsProcessed.forEach((keyword) => {
+                    // Keywords are already uppercase from processing step
+                    const words = keyword.split(" ").filter(w => w);
+                    if (words.length === 0) return;
+                    let currentLevel = tree;
+                    let currentPathNode = null; // Keep track of the node representing the current keyword level
+                    words.forEach((word, i) => {
+                        const w = word.trim(); // Already uppercase
+                        if (!w) return;
+                        if (!currentLevel[w]) {
+                            currentLevel[w] = { _children: {}, _titles: new Set() };
+                        }
+                        currentPathNode = currentLevel[w]; // Update the node for this level
+                        // Add title at the *end* of the specific keyword phrase path
+                        if (i === words.length - 1) {
+                            currentPathNode._titles.add(item.Title);
+                        }
+                        currentLevel = currentLevel[w]._children; // Move to the next level for the next word
+                    });
+                });
+            });
+            return tree;
+        }
+
+        // --- Group Synonyms/Stems (First Pass) (No changes) ---
+        function groupSynonyms(initialTree) {
+            const groups = {}; for (const [originalName, nodeData] of Object.entries(initialTree)) { const canonicalName = getCanonicalName(originalName); const totalTitles = getTotalTitles(nodeData); if (!groups[canonicalName]) { groups[canonicalName] = { originalNodes: [], totalGroupTitles: 0 }; } groups[canonicalName].originalNodes.push({ name: originalName, nodeData: nodeData, totalTitles: totalTitles }); groups[canonicalName].totalGroupTitles = groups[canonicalName].originalNodes.reduce((sum, node) => sum + getTotalTitles(node.nodeData), 0); } const intermediateTree = {}; for (const [canonicalName, groupData] of Object.entries(groups)) {
+                const isTrueGroup = groupData.originalNodes.length > 1 || (groupData.originalNodes.length === 1 && getCanonicalName(groupData.originalNodes[0].name) !== groupData.originalNodes[0].name.toUpperCase()); if (!isTrueGroup) { const { name, nodeData } = groupData.originalNodes[0]; intermediateTree[name] = nodeData; } else {
+                    let bestName = groupData.originalNodes[0].name; let maxTitles = -1; groupData.originalNodes.forEach(node => { const nodeTitleCount = getTotalTitles(node.nodeData); if (nodeTitleCount > maxTitles) { maxTitles = nodeTitleCount; bestName = node.name; } else if (nodeTitleCount === maxTitles) { if (node.name.toUpperCase() === canonicalName && bestName.toUpperCase() !== canonicalName) { bestName = node.name; } else if (node.name.length < bestName.length && bestName.toUpperCase() !== canonicalName) { bestName = node.name; } } }); const groupNode = {
+                        _isGroup: true, _isSynonymGroup: true, _displayName: bestName, _canonicalName: canonicalName, _children: {}, _titles: new Set(), // Group node itself doesn't own titles directly from synonyms
+                        _totalGroupTitles: groupData.totalGroupTitles, _originalNames: groupData.originalNodes.map(n => n.name)
+                    }; // Aggregate children and titles from original nodes
+                    let aggregatedChildren = {};
+                    let aggregatedTitles = new Set(); groupData.originalNodes.forEach(orig => { // Merge children, handling potential duplicates (rare but possible)
+                        Object.entries(orig.nodeData._children || {}).forEach(([childKey, childNode]) => {
+                            if (!aggregatedChildren[childKey]) { aggregatedChildren[childKey] = childNode; } else {
+                                console.warn(`Duplicate child key '${childKey}' during synonym merge for '${bestName}'. Merging titles.`); aggregatedChildren[childKey]._titles = new Set([...(aggregatedChildren[childKey]._titles || []), ...(childNode._titles || [])]); // Merge children recursively? For now, just merge titles at this level.
+                            }
+                        }); // Merge titles
+                        (orig.nodeData._titles || []).forEach(title => aggregatedTitles.add(title));
+                    }); groupNode._children = aggregatedChildren; groupNode._titles = aggregatedTitles; // Titles directly associated with any of the synonym roots are kept here
+                    intermediateTree[bestName] = groupNode;
+                }
+            } return intermediateTree;
+        }
+
+
+        // --- Group Top Level Nodes & Sub-Categories (Revised for Flattening & MISC) ---
+        function groupTopLevelNodesByCategory(intermediateTree) {
+            const mainCategoryData = {};
+            const trulyUnmappedNodes = {};
+
+            // --- Pass 1: Assign to Main Categories ---
+            for (const [name, nodeData] of Object.entries(intermediateTree)) {
+                const lookupName = (nodeData._isSynonymGroup ? nodeData._canonicalName : getCanonicalName(name));
+                const originalNameLookup = name.toUpperCase(); // Name is already uppercase from build step
+                let targetGroup = null;
+
+                // Prefer direct keyword match first
+                targetGroup = keywordToGroupMap[originalNameLookup] || keywordToGroupMap[lookupName];
+
+                // If no direct match, check secondary group rules
+                if (!targetGroup) {
+                    const secondaryGroupName = findSecondaryGroup(name); // Check original and canonical inside helper
+                    if (secondaryGroupName) {
+                        // Check if the secondary group should merge into a primary
+                        const mergeTargetGroup = secondaryToPrimaryMap[secondaryGroupName];
+                        targetGroup = mergeTargetGroup ? mergeTargetGroup : secondaryGroupName; // Use primary if mapped, else use secondary name
+                        // Ensure the target group exists in subCategoryConfig or create it dynamically?
+                        if (!subCategoryConfig[targetGroup]) {
+                            console.warn(`Secondary group '${targetGroup}' used but not defined in subCategoryConfig. Creating dynamically.`);
+                            subCategoryConfig[targetGroup] = { [MISC_SUB_CATEGORY_NAME]: [] };
+                            keywordToSubCategoryMap[targetGroup] = {}; // Initialize its sub-cat map
+                        }
+                    }
+                }
+
+                // Assign to category or mark as unmapped
+                if (targetGroup) {
+                    if (!mainCategoryData[targetGroup]) { mainCategoryData[targetGroup] = { nodes: [], totalGroupTitles: 0, subCategories: {}, directKeywords: {} }; }
+                    mainCategoryData[targetGroup].nodes.push({ name: name, nodeData: nodeData });
+                } else {
+                    trulyUnmappedNodes[name] = nodeData;
+                }
+            }
+
+            // --- Pass 2: Sub-Categorize within Main Categories ---
+            for (const mainCatName in mainCategoryData) {
+                const category = mainCategoryData[mainCatName];
+                // Ensure subCategoryConfig and map exist for this category
+                const subCatConfigForMain = subCategoryConfig[mainCatName] || { [MISC_SUB_CATEGORY_NAME]: [] };
+                const subCatLookup = keywordToSubCategoryMap[mainCatName] || {};
+                const shouldFlatten = FLATTENED_CATEGORIES.has(mainCatName);
+
+                category.nodes.forEach(nodeInfo => {
+                    const nodeName = nodeInfo.name; // Already uppercase
+                    const nodeData = nodeInfo.nodeData;
+                    const lookupName = (nodeData._isSynonymGroup ? nodeData._canonicalName : getCanonicalName(nodeName)); // canonical name needed
+                    const originalNameLookup = nodeName; // Already uppercase
+                    let subCategoryName = null;
+
+                    // Find sub-category using both canonical and original name lookup
+                    if (subCatLookup) { subCategoryName = subCatLookup[lookupName] || subCatLookup[originalNameLookup]; }
+
+
+                    // Determine placement: specific sub-cat, direct keyword (if flattening), or default MISC sub-cat
+                    if (subCategoryName && subCatConfigForMain[subCategoryName] && !shouldFlatten) { // Check if subCatName is valid
+                        if (!category.subCategories[subCategoryName]) { category.subCategories[subCategoryName] = { nodes: [], totalGroupTitles: 0 }; }
+                        category.subCategories[subCategoryName].nodes.push(nodeInfo);
+                    } else if (subCategoryName && subCatConfigForMain[subCategoryName] && shouldFlatten) { // Flatten: Treat as direct keyword
+                        category.directKeywords[nodeName] = nodeData;
+                    } else if (!subCategoryName && shouldFlatten) { // Flatten: No sub-cat match, assign direct
+                        category.directKeywords[nodeName] = nodeData;
+                    } else { // Not flattening, no specific/valid sub-cat match -> assign to default MISC sub-category
+                        const defaultSubCat = MISC_SUB_CATEGORY_NAME;
+                        // Ensure default MISC sub-cat exists in config structure (important!)
+                        if (!subCatConfigForMain[defaultSubCat]) {
+                           console.warn(`Default MISC sub-cat '${defaultSubCat}' missing in config for '${mainCatName}', creating dynamically.`);
+                           subCatConfigForMain[defaultSubCat] = [];
+                           // Also update the lookup map if needed, though less critical here
+                           if(!subCatLookup) keywordToSubCategoryMap[mainCatName] = {};
+                        }
+
+                        if (!category.subCategories[defaultSubCat]) { category.subCategories[defaultSubCat] = { nodes: [], totalGroupTitles: 0 }; }
+                        category.subCategories[defaultSubCat].nodes.push(nodeInfo);
+                    }
+                });
+
+                // Calculate total titles for each sub-category *after* all nodes are assigned
+                for (const subCat of Object.values(category.subCategories)) {
+                    subCat.totalGroupTitles = subCat.nodes.reduce((sum, ni) => sum + getTotalTitles(ni.nodeData), 0);
+                }
+                // Calculate total titles for the main category
+                let mainTotal = 0;
+                Object.values(category.subCategories).forEach(subCat => mainTotal += subCat.totalGroupTitles);
+                Object.values(category.directKeywords).forEach(directNode => mainTotal += getTotalTitles(directNode));
+                category.totalGroupTitles = mainTotal;
+                delete category.nodes; // Clean up temporary array
+            }
+
+            // --- Pass 3: Build Final Tree Structure ---
+            const finalTree = {};
+
+            // Create Main Category Nodes
+            for (const [mainCatName, categoryData] of Object.entries(mainCategoryData)) {
+                if (categoryData.totalGroupTitles === 0) continue; // Skip empty categories
+                const mainCategoryNode = {
+                    _isGroup: true, _isMainCategory: true, _displayName: mainCatName,
+                    _canonicalName: mainCatName, _children: {}, _titles: new Set(), // Main cats don't have direct titles
+                    _totalGroupTitles: categoryData.totalGroupTitles
+                };
+
+                // Add Sub-Category children
+                for (const [subCatName, subCategoryData] of Object.entries(categoryData.subCategories)) {
+                    if (subCategoryData.totalGroupTitles === 0) continue; // Skip empty sub-cats
+                    const subCategoryNode = {
+                        _isGroup: true, _isSubCategory: true, _displayName: subCatName,
+                        _canonicalName: subCatName, _children: {}, _titles: new Set(), // Sub-cats don't have direct titles
+                        _totalGroupTitles: subCategoryData.totalGroupTitles
+                    };
+                    // Add keyword/synonym nodes to the sub-category
+                    subCategoryData.nodes
+                        .sort((a, b) => { // Sort nodes within sub-category
+                            const countDiff = getTotalTitles(b.nodeData) - getTotalTitles(a.nodeData);
+                            if (countDiff !== 0) return countDiff;
+                            return (a.name || '').localeCompare(b.name || '');
+                        })
+                        .forEach(nodeInfo => { subCategoryNode._children[nodeInfo.name] = nodeInfo.nodeData; });
+
+                    // Add the populated sub-category node if it has children
+                    if (Object.keys(subCategoryNode._children).length > 0) {
+                        mainCategoryNode._children[subCatName] = subCategoryNode;
+                    }
+                }
+
+                // Add Direct Keyword children (if flattening)
+                for (const [directKeywordName, directKeywordData] of Object.entries(categoryData.directKeywords)) {
+                    mainCategoryNode._children[directKeywordName] = directKeywordData;
+                }
+
+                // Sort children within the main category
+                mainCategoryNode._children = Object.fromEntries(
+                    Object.entries(mainCategoryNode._children)
+                        .sort(([, nodeA], [, nodeB]) => {
+                            const isSubA = nodeA._isSubCategory; const isSubB = nodeB._isSubCategory;
+                            if (isSubA && !isSubB) return -1; // Sub-cats first
+                            if (!isSubA && isSubB) return 1;
+                            const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA); // Then by count desc
+                            if (countDiff !== 0) return countDiff;
+                            return (nodeA._displayName || nodeA.name || '').localeCompare(nodeB._displayName || nodeB.name || ''); // Then by name asc
+                        })
+                );
+
+                if (Object.keys(mainCategoryNode._children).length > 0) {
+                    finalTree[mainCatName] = mainCategoryNode;
+                }
+            }
+
+            // Handle Truly Unmapped Nodes (into MISCELLANEOUS top-level)
+            if (Object.keys(trulyUnmappedNodes).length > 0) {
+                let miscTopLevelNode = finalTree[MISC_MAIN_CATEGORY_NAME];
+                if (!miscTopLevelNode) {
+                    miscTopLevelNode = {
+                        _isGroup: true, _isMiscUncategorizedGroup: true, _displayName: MISC_MAIN_CATEGORY_NAME,
+                        _canonicalName: MISC_MAIN_CATEGORY_NAME.toUpperCase().replace(/ /g, '-'),
+                        _children: {}, _titles: new Set(), _totalGroupTitles: 0
+                    };
+                    finalTree[MISC_MAIN_CATEGORY_NAME] = miscTopLevelNode; // Add to final tree immediately
+                }
+
+
+                const miscSubCatConfig = subCategoryConfig[MISC_MAIN_CATEGORY_NAME] || { [FINAL_UNCATEGORIZED_SUB_NAME]: [] };
+                const miscSubCatLookup = keywordToSubCategoryMap[MISC_MAIN_CATEGORY_NAME] || {};
+                if (!miscSubCatConfig[FINAL_UNCATEGORIZED_SUB_NAME]) {
+                    miscSubCatConfig[FINAL_UNCATEGORIZED_SUB_NAME] = [];
+                }
+                const miscSubCategories = {}; // Temp structure
+
+                for (const [name, nodeData] of Object.entries(trulyUnmappedNodes)) {
+                    const lookupName = (nodeData._isSynonymGroup ? nodeData._canonicalName : getCanonicalName(name));
+                    const originalNameLookup = name.toUpperCase(); // Already upper
+                    let subCategoryName = null;
+                    if (miscSubCatLookup) { subCategoryName = miscSubCatLookup[lookupName] || miscSubCatLookup[originalNameLookup]; }
+
+                    if (!subCategoryName || !miscSubCatConfig[subCategoryName]) { // Assign to final fallback if no valid MISC sub-cat found
+                        subCategoryName = FINAL_UNCATEGORIZED_SUB_NAME;
+                        // Ensure the fallback sub-category exists in the node's children structure
+                         if(!miscSubCatConfig[subCategoryName]){
+                             miscSubCatConfig[subCategoryName] = [];
+                             console.warn(`Final uncategorized sub-cat '${subCategoryName}' created dynamically for MISC.`);
+                         }
+                    }
+
+                    if (!miscSubCategories[subCategoryName]) { miscSubCategories[subCategoryName] = { nodes: [], totalGroupTitles: 0 }; }
+                    miscSubCategories[subCategoryName].nodes.push({ name: name, nodeData: nodeData });
+                }
+
+                for (const [subCatName, subCategoryData] of Object.entries(miscSubCategories)) {
+                    subCategoryData.totalGroupTitles = subCategoryData.nodes.reduce((sum, ni) => sum + getTotalTitles(ni.nodeData), 0);
+                    if (subCategoryData.totalGroupTitles === 0) continue;
+
+                    let subCategoryNode = miscTopLevelNode._children[subCatName];
+                    if (!subCategoryNode) {
+                        subCategoryNode = {
+                            _isGroup: true, _isSubCategory: true, _displayName: subCatName,
+                            _canonicalName: subCatName, _children: {}, _titles: new Set(),
+                            _totalGroupTitles: 0
+                        };
+                        miscTopLevelNode._children[subCatName] = subCategoryNode;
+                    }
+                    subCategoryData.nodes
+                        .sort((a, b) => { // Sort within sub-category
+                            const countDiff = getTotalTitles(b.nodeData) - getTotalTitles(a.nodeData);
+                            if (countDiff !== 0) return countDiff;
+                            return (a.name || '').localeCompare(b.name || '');
+                        })
+                        .forEach(nodeInfo => {
+                            subCategoryNode._children[nodeInfo.name] = nodeInfo.nodeData;
+                        });
+
+                    subCategoryNode._totalGroupTitles = Object.values(subCategoryNode._children).reduce((sum, child) => sum + getTotalTitles(child), 0);
+
+                    // No need to sort children *within* the sub-category node again here, already done
+                }
+
+                miscTopLevelNode._totalGroupTitles = Object.values(miscTopLevelNode._children).reduce((sum, child) => sum + getTotalTitles(child), 0);
+
+                miscTopLevelNode._children = Object.fromEntries( // Sort MISC sub-categories
+                    Object.entries(miscTopLevelNode._children)
+                        .sort(([, nodeA], [, nodeB]) => {
+                            if (nodeA._displayName === FINAL_UNCATEGORIZED_SUB_NAME) return 1; // Put final uncategorized last
+                            if (nodeB._displayName === FINAL_UNCATEGORIZED_SUB_NAME) return -1;
+                            const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA);
+                            if (countDiff !== 0) return countDiff;
+                            return (nodeA._displayName || '').localeCompare(nodeB._displayName || '');
+                        })
+                );
+                // No need to add miscTopLevelNode to finalTree again, it was added when created/found
+            }
+
+            return finalTree;
+        }
+
+        // --- *** NEW FUNCTION: Create BIO Subgroup *** ---
+        function createBioSubgroup(treeData) {
+            const mainCatName = 'FABRICATION-CONSTRUCTION-MATERIALS';
+            const subCatName = 'MATERIALS-BIO-NATURE-SUSTAINABILITY';
+
+            // Helper to recursively find and modify the target node
+            function findAndModify(parentNode) {
+                 // Check if this node is the target sub-category
+                 // Match using _displayName as that's set during categorization
+                if (parentNode && parentNode._isSubCategory && parentNode._displayName === subCatName) {
+
+                    const bioPrefixedKeywords = {}; // Keywords starting with BIO (e.g., BIOMIMETICS)
+                    const otherKeywords = {};     // Keywords not related to BIO
+                    let originalBioNode = null;   // The node for the keyword "BIO" itself
+
+                    if (!parentNode._children) return; // No children to process
+
+                    // --- Step 1: Separate children ---
+                    for (const [key, childNode] of Object.entries(parentNode._children)) {
+                         if (key === 'BIO') {
+                            originalBioNode = childNode; // Found the specific "BIO" keyword node
+                         } else if (key.startsWith('BIO')) {
+                            bioPrefixedKeywords[key] = childNode; // Found another keyword starting with BIO
+                         } else {
+                            otherKeywords[key] = childNode; // Not related to BIO
+                         }
+                    }
+
+                    // --- Step 2: Check if a BIO group is needed ---
+                    const needsBioGroup = Object.keys(bioPrefixedKeywords).length > 0 || originalBioNode;
+
+                    if (needsBioGroup) {
+                        // --- Step 3: Create the single 'BIO' group node ---
+                        const bioGroupNode = {
+                            _isGroup: true,
+                            _isBioGroup: true, // Custom flag
+                            _displayName: "BIO",
+                            _canonicalName: "BIO",
+                            _children: {}, // Initialize empty children
+                            _titles: new Set(), // Group node doesn't hold titles directly
+                            _totalGroupTitles: 0 // Will calculate later
+                        };
+
+                        // --- Step 4: Populate the 'BIO' group ---
+                        // 4a: Add keywords starting with BIO (e.g., BIOMIMETICS)
+                        Object.assign(bioGroupNode._children, bioPrefixedKeywords);
+
+                        // 4b: Add *children* of the original "BIO" node (e.g., INSPIRED, DIGITAL)
+                        if (originalBioNode && originalBioNode._children) {
+                            for (const [origBioChildKey, origBioChildNode] of Object.entries(originalBioNode._children)) {
+                                // Merge children, handle potential duplicates if necessary (e.g., if "BIOMIMETICS" was also a child of "BIO")
+                                if (!bioGroupNode._children[origBioChildKey]) {
+                                    bioGroupNode._children[origBioChildKey] = origBioChildNode;
+                                } else {
+                                     // Handle collision - e.g., merge titles or log a warning
+                                     console.warn(`Merging child '${origBioChildKey}' during BIO group creation. Titles might be combined.`);
+                                     const existingNode = bioGroupNode._children[origBioChildKey];
+                                     const titlesToMerge = origBioChildNode._titles instanceof Set ? origBioChildNode._titles : new Set();
+                                     existingNode._titles = new Set([...(existingNode._titles || []), ...titlesToMerge]);
+                                     // Potentially merge grandchildren too if needed, but keep it simple for now
+                                     if(origBioChildNode._children && Object.keys(origBioChildNode._children).length > 0){
+                                         if(!existingNode._children) existingNode._children = {};
+                                         // Simple merge, could be more sophisticated
+                                         Object.assign(existingNode._children, origBioChildNode._children);
+                                     }
+                                }
+                            }
+                        }
+                         // 4c: Optionally merge titles directly associated with the original "BIO" node?
+                         // Typically, group nodes don't hold titles directly. Let's skip this.
+                         // if (originalBioNode && originalBioNode._titles) {
+                         //     originalBioNode._titles.forEach(title => bioGroupNode._titles.add(title));
+                         // }
+
+
+                        // --- Step 5: Sort children within the new BIO group ---
+                        if (Object.keys(bioGroupNode._children).length > 0) {
+                           bioGroupNode._children = Object.fromEntries(
+                                Object.entries(bioGroupNode._children)
+                                    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB)) // Sort alphabetically
+                            );
+                        }
+
+                        // --- Step 6: Recalculate total titles for the BIO group ---
+                        bioGroupNode._totalGroupTitles = getTotalTitles(bioGroupNode); // Calculate based on its new children
+
+                        // --- Step 7: Reconstruct the parent's children ---
+                        const newParentChildren = {
+                            "BIO": bioGroupNode, // Add the merged BIO group
+                            ...otherKeywords     // Add back the non-BIO keywords
+                        };
+
+                         // --- Step 8: Sort and Assign back to Parent ---
+                        parentNode._children = Object.fromEntries(
+                            Object.entries(newParentChildren)
+                                .sort(([, nodeA], [, nodeB]) => {
+                                    // Sort logic: Put the "BIO" group first
+                                    const isBioA = nodeA._displayName === "BIO";
+                                    const isBioB = nodeB._displayName === "BIO";
+                                    if (isBioA && !isBioB) return -1;
+                                    if (!isBioA && isBioB) return 1;
+
+                                    // Then sort by total titles descending
+                                    const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA);
+                                    if (countDiff !== 0) return countDiff;
+
+                                    // Finally by name ascending
+                                    return (nodeA._displayName || nodeA.name || '').localeCompare(nodeB._displayName || nodeB.name || '');
+                                })
+                        );
+
+                         // --- Step 9: Update Parent's total title count ---
+                         // This might not be strictly necessary if getTotalTitles recalculates on demand,
+                         // but good practice if using cached counts elsewhere.
+                         // parentNode._totalGroupTitles = getTotalTitles(parentNode);
+
+                    }
+                    // If no BIO group was needed (no BIO keywords found), do nothing.
+
+                } else if (parentNode && parentNode._children) {
+                    // If not the target node, recurse into its children
+                    for (const childNode of Object.values(parentNode._children)) {
+                        // Only recurse if the child is potentially a container (group or category)
+                        if (typeof childNode === 'object' && childNode !== null && childNode._children) {
+                           findAndModify(childNode);
+                        }
+                    }
+                }
+            }
+
+            // Find the main category first
+            const mainCategoryNode = treeData[mainCatName];
+            if (mainCategoryNode) {
+                 // Start the search/modify process directly on the main category node.
+                 // The function will recurse down to find the sub-category.
+                findAndModify(mainCategoryNode);
+            } else {
+                console.log(`Main category '${mainCatName}' not found for BIO subgroup creation.`);
+            }
+
+            return treeData; // Return the potentially modified tree
+        }
+
+        // --- File Handling Orchestrator ---
+        function handleFile(file) {
+            // ... (previous code: constants, listeners, etc.) ...
+            if (!file || !file.name.endsWith(".json")) {
+                alert("Please upload a valid .json file."); return;
+            }
+            // ... (reset UI elements) ...
+            loadingMessage.style.display = "flex"; // Show loading
+            // ... (reset tree, stats, search, current data, paper map) ...
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error("JSON data must be an array of objects.");
+
+                    const processedData = data.map((item, index) => {
+                         // ... (keyword processing logic - KEEP previous improvements including adding BIO keywords to subCategoryConfig) ...
+                         const title = item.Title || `Untitled_${index}`;
+                         const originalKeywords = Array.isArray(item.Keywords) ? item.Keywords.join(', ') : (item.Keywords || '');
+
+                         const rawKeywordsList = (typeof item.Keywords === 'string'
+                             ? item.Keywords.split(/[,;]+/)
+                             : Array.isArray(item.Keywords) ? item.Keywords.map(k => String(k)) : []
+                         );
+
+                         const processedKeywords = rawKeywordsList
+                             .map(k => { /* ... keep hyphen processing ... */
+                                let processedK = k.trim().toLowerCase();
+                                if (!processedK) return '';
+                                const words = processedK.split(' ');
+                                const processedWords = words.map(w => {
+                                    if (w.includes('-')) {
+                                        const wUpper = w.toUpperCase();
+                                        if (!keepHyphenatedTerms.has(wUpper)) {
+                                            return w.replace(/-/g, ' ');
+                                        }
+                                        return w;
+                                    }
+                                    return w;
+                                });
+                                return processedWords.join(' ').replace(/\s+/g, ' ').trim();
+                              })
+                             .filter(k => k && /^[a-z0-9\s\-\(\)]+$/.test(k) && k.length > 1)
+                             .map(k => k.toUpperCase()) // UPPERCASE
+                             .filter((v, i, a) => a.indexOf(v) === i); // Unique
+
+                         if (!paperDetailsMap.has(title)) {
+                             paperDetailsMap.set(title, {
+                                 name: title, value: 1, keywords: originalKeywords, summary: item.Summary || ""
+                             });
+                         } // else { console.warn(`Duplicate title: "${title}"`); }
+
+                         return { Title: title, KeywordsProcessed: processedKeywords };
+                    });
+
+                    // --- Processing Pipeline ---
+                    const initialTree = buildKeywordHierarchy_v2(processedData);
+                    const intermediateTree = groupSynonyms(initialTree);
+                    let finalCategorizedTree = groupTopLevelNodesByCategory(intermediateTree);
+
+                    // *** APPLY BIO SUBGROUP MERGING ***
+                    finalCategorizedTree = createBioSubgroup(finalCategorizedTree); // Apply the refinement HERE
+
+                    // ** APPLY SINGLE ARTICLE GROUPING **
+                    const treeWithSingleArticleGroups = applySingleArticleGrouping(finalCategorizedTree);
+
+                    // --- Final Steps ---
+                    currentProcessedTreeData = treeWithSingleArticleGroups;
+                    const treeElement = generateDeepHierarchy(currentProcessedTreeData);
+                    displayTree(treeElement);
+                    displayStatistics(initialTree, intermediateTree, currentProcessedTreeData, processedData);
+
+                } catch (err) {
+                    alert("Error processing file: " + err.message);
+                    console.error(err);
+                } finally {
+                    loadingMessage.style.display = "none";
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- *** Apply Single-Article Grouping (Recursive - UPDATED Condition) *** ---
+        function applySingleArticleGrouping(treeData) {
+            if (!treeData || typeof treeData !== 'object') {
+                return treeData;
+            }
+
+            const processedTree = {};
+
+            for (const [key, nodeData] of Object.entries(treeData)) {
+                let processedNodeData = { ...nodeData }; // Shallow copy
+
+                // Recursively process children first
+                if (processedNodeData._children && Object.keys(processedNodeData._children).length > 0) {
+                    processedNodeData._children = applySingleArticleGrouping(processedNodeData._children); // Process children recursively
+                }
+
+                // --- Apply grouping logic to the *current* node's children ---
+                const canApplyGroupingToChildren =
+                    processedNodeData._isMainCategory ||
+                    processedNodeData._isSubCategory ||
+                    processedNodeData._isMiscUncategorizedGroup ||
+                    processedNodeData._isSynonymGroup ||
+                    processedNodeData._isBioGroup || // Allow grouping within the BIO group too
+                    // Regular keyword nodes can also have single-article children grouped
+                    (!processedNodeData._isGroup && !processedNodeData._isMainCategory && !processedNodeData._isSubCategory && !processedNodeData._isMiscUncategorizedGroup && !processedNodeData._isSynonymGroup && !processedNodeData._isSingleArticleGroup && !processedNodeData._isOrphanTitleGroup && !processedNodeData._isBioGroup);
+
+
+                if (canApplyGroupingToChildren && processedNodeData._children && Object.keys(processedNodeData._children).length > 0) {
+                    const childrenEntries = Object.entries(processedNodeData._children);
+                    const singleArticleChildren = [];
+                    const otherChildren = {};
+
+                    childrenEntries.forEach(([childKey, childNode]) => {
+                        // Check if it's a plain keyword node (not any kind of group)
+                         const isPlainNode = !childNode._isGroup && !childNode._isMainCategory && !childNode._isSubCategory && !childNode._isMiscUncategorizedGroup && !childNode._isSynonymGroup && !childNode._isSingleArticleGroup && !childNode._isOrphanTitleGroup && !childNode._isBioGroup;
+
+                        const hasOneTitle = childNode._titles instanceof Set && childNode._titles.size === 1;
+                        const hasNoGrandChildren = !childNode._children || Object.keys(childNode._children).length === 0;
+
+                        if (isPlainNode && hasOneTitle && hasNoGrandChildren) {
+                            singleArticleChildren.push({ name: childKey, nodeData: childNode });
+                        } else {
+                            otherChildren[childKey] = childNode;
+                        }
+                    });
+
+                    if (singleArticleChildren.length > SINGLE_ARTICLE_THRESHOLD) {
+                        const singleArticleGroupNode = {
+                            _isGroup: true, _isSingleArticleGroup: true,
+                            _displayName: SINGLE_ARTICLE_CATEGORY_NAME,
+                            _canonicalName: SINGLE_ARTICLE_CATEGORY_NAME.toUpperCase().replace(/ /g, '-'),
+                            _children: {}, _titles: new Set(),
+                            _totalGroupTitles: singleArticleChildren.length
+                        };
+                        singleArticleChildren
+                            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                            .forEach(item => { singleArticleGroupNode._children[item.name] = item.nodeData; });
+                        otherChildren[SINGLE_ARTICLE_CATEGORY_NAME] = singleArticleGroupNode;
+                        processedNodeData._children = otherChildren; // Assign back with the new group
+                    } else {
+                        // If not grouped, put nodes back into otherChildren before assigning back
+                        // No need to re-add, they are already in otherChildren if they weren't moved.
+                        // processedNodeData._children = otherChildren; // Already set if no group created
+                    }
+
+                    // Re-sort children after potential grouping/modification
+                    if (Object.keys(processedNodeData._children).length > 0) { // Check if not empty
+                        processedNodeData._children = Object.fromEntries(
+                            Object.entries(processedNodeData._children)
+                                .sort(([, nodeA], [, nodeB]) => {
+                                    // Prioritize Groups (Main Cat, Sub Cat, Synonym, Single, Orphan, BIO)
+                                    const isGroupA = nodeA._isGroup || nodeA._isMainCategory || nodeA._isSubCategory || nodeA._isSynonymGroup || nodeA._isSingleArticleGroup || nodeA._isOrphanTitleGroup || nodeA._isBioGroup;
+                                    const isGroupB = nodeB._isGroup || nodeB._isMainCategory || nodeB._isSubCategory || nodeB._isSynonymGroup || nodeB._isSingleArticleGroup || nodeB._isOrphanTitleGroup || nodeB._isBioGroup;
+
+                                    if (isGroupA && !isGroupB) return -1;
+                                    if (!isGroupA && isGroupB) return 1;
+
+                                    // Within groups or within keywords, sort by total titles descending
+                                    const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA);
+                                    if (countDiff !== 0) return countDiff;
+
+                                    // Finally, sort by display name ascending
+                                    return (nodeA._displayName || nodeA.name || '').localeCompare(nodeB._displayName || nodeB.name || '');
+                                })
+                        );
+                    }
+                }
+                processedTree[key] = processedNodeData;
+            }
+            return processedTree;
+        }
+
+
+        // --- Get Total Titles (Recursive - Counts all titles in subtree) ---
+        function getTotalTitles(nodeData) {
+            if (!nodeData) return 0;
+
+            // Use pre-calculated total if available (for groups)
+            // Make sure _totalGroupTitles is reliably calculated for all group types
+            if (typeof nodeData._totalGroupTitles === 'number') {
+                 // Optimization: If a node has _totalGroupTitles, trust it.
+                 // This avoids re-calculating for large groups repeatedly.
+                 // Ensure _totalGroupTitles is set correctly when groups are created/modified.
+                 // return nodeData._totalGroupTitles;
+                 // --> Reverted for now, let's recalculate to be safe during refactoring.
+            }
+
+
+            let total = 0;
+            if (nodeData._titles instanceof Set) {
+                total += nodeData._titles.size;
+            }
+            if (nodeData._children) {
+                for (const child of Object.values(nodeData._children)) {
+                    total += getTotalTitles(child); // Recursive call
+                }
+            }
+            return total;
+        }
+
+
+        // --- Helper: Append Titles to a List (Groups orphans/long lists) ---
+        function appendTitlesToList(targetUl, titles, parentDisplayName, level) {
+            const titlesArray = Array.from(titles).sort(); // Ensure it's an array and sorted
+            const nodeTitlesCount = titlesArray.length;
+
+            if (nodeTitlesCount === 0) return false;
+
+            const shouldGroupTitles = nodeTitlesCount > DIRECT_TITLE_LIST_THRESHOLD;
+            const parentLi = targetUl.closest('li'); // The LI containing the target UL
+            const parentNodeContent = parentLi ? parentLi.querySelector(':scope > .node-content') : null;
+            const parentIsBioGroup = parentLi && parentLi.classList.contains('bio-keyword-group');
+
+            // Find direct children of the parent LI that are *not* title groups or title items
+            const parentHasOtherChildren = parentLi && parentLi.querySelector(":scope > ul.nested > li:not(.title-item):not(.general-title-group):not(.orphan-title-group):not(.single-article-group):not(.bio-keyword-group)");
+
+            // Titles are considered "orphan" if they are direct children of a node
+            // AND that node ALSO has other non-title children (keywords or groups),
+            // AND there are more than ORPHAN_GROUP_THRESHOLD such titles.
+            // Exception: Titles directly under the BIO group are not treated as orphans.
+             const isEffectivelyOrphan = !parentIsBioGroup && parentHasOtherChildren && nodeTitlesCount > ORPHAN_GROUP_THRESHOLD;
+
+            let groupDisplayName = parentDisplayName + " " + ORPHAN_TITLES_SUFFIX;
+            let groupClass = 'general-title-group'; // Default
+            if (isEffectivelyOrphan) {
+                 groupClass = 'orphan-title-group';
+             }
+
+            if (shouldGroupTitles || isEffectivelyOrphan) {
+                const groupLi = document.createElement("li");
+                groupLi.classList.add(groupClass);
+                groupLi.dataset.displayName = groupDisplayName; // Use the generated name
+
+                const groupContentDiv = document.createElement('div'); groupContentDiv.classList.add('node-content');
+                const groupToggle = document.createElement("span"); groupToggle.innerHTML = "▶"; groupToggle.classList.add("toggle-icon"); groupContentDiv.appendChild(groupToggle);
+                const groupNameSpan = document.createElement('span'); groupNameSpan.classList.add('node-name'); groupNameSpan.textContent = groupDisplayName; groupContentDiv.appendChild(groupNameSpan);
+                const groupCountSpan = document.createElement('span'); groupCountSpan.classList.add('node-count'); groupCountSpan.textContent = `(${nodeTitlesCount})`; groupContentDiv.appendChild(groupCountSpan);
+                groupLi.appendChild(groupContentDiv);
+
+                const titlesUlForGroup = document.createElement("ul"); titlesUlForGroup.classList.add("nested");
+                titlesArray.forEach((title) => {
+                    const tli = document.createElement("li"); tli.textContent = title; tli.classList.add('title-item');
+                    tli.dataset.title = title; // Store title for potential future use
+                    titlesUlForGroup.appendChild(tli);
+                });
+                groupLi.appendChild(titlesUlForGroup);
+                targetUl.appendChild(groupLi);
+            } else {
+                // List titles directly
+                titlesArray.forEach((title) => {
+                    const tli = document.createElement("li"); tli.textContent = title; tli.classList.add('title-item');
+                    tli.dataset.title = title; // Store title for potential future use
+                    targetUl.appendChild(tli);
+                });
+            }
+            return true; // Indicate that titles were added
+        }
+
+        // --- Generate Deep Hierarchy HTML (Handles Groups, Orphans, Single-Articles, BIO Group) ---
+        function generateDeepHierarchy(treeData) {
+
+            function createNode(name, nodeData, level = 0) {
+                const {
+                    _isMainCategory = false, _isSubCategory = false, _isSynonymGroup = false,
+                    _isMiscUncategorizedGroup = false, _isSingleArticleGroup = false, _isOrphanTitleGroup = false,
+                    _isBioGroup = false, // Added BIO group check
+                    _isGroup = false // Generic group flag
+                } = nodeData;
+
+                const displayName = nodeData._displayName || name;
+                const children = Object.entries(nodeData._children || {});
+                const directTitles = (nodeData._titles instanceof Set) ? nodeData._titles : new Set();
+                const totalTitlesInSubtree = getTotalTitles(nodeData); // Recalculate for display
+
+                let childrenToRender = children;
+                let titlesToRenderDirectly = new Set(directTitles);
+                let hideOriginalSynonymChild = false;
+
+                // Handle synonym group display optimization
+                if (_isSynonymGroup && children.length === 1) {
+                    const [childKey, childNode] = children[0];
+                    // If the single child's name matches the group's display name (case-insensitive)
+                    if (childKey.toUpperCase() === displayName.toUpperCase()) {
+                        hideOriginalSynonymChild = true;
+                        // Promote grandchildren to be direct children for rendering
+                        childrenToRender = Object.entries(childNode._children || {});
+                        // Merge titles from the hidden child into the group node for rendering
+                        const childTitles = (childNode._titles instanceof Set) ? childNode._titles : new Set();
+                        childTitles.forEach(title => titlesToRenderDirectly.add(title));
+                    }
+                }
+                const sortedDirectTitles = Array.from(titlesToRenderDirectly).sort();
+
+
+                const li = document.createElement("li");
+                li.dataset.originalName = name; // Store original key
+                li.dataset.displayName = displayName; // Store display name
+
+                // Determine node type class
+                let nodeTypeClass = 'keyword-node'; // Default
+                if (_isMainCategory) { nodeTypeClass = 'main-category'; }
+                else if (_isMiscUncategorizedGroup) { nodeTypeClass = 'misc-uncategorized-group'; }
+                else if (_isSubCategory) { nodeTypeClass = 'sub-category'; }
+                else if (_isSingleArticleGroup) { nodeTypeClass = 'single-article-group'; }
+                else if (_isOrphanTitleGroup) { nodeTypeClass = 'orphan-title-group'; }
+                else if (_isBioGroup) { nodeTypeClass = 'bio-keyword-group'; } // Specific BIO group class
+                else if (_isSynonymGroup) { nodeTypeClass = 'synonym-group'; }
+                // Explicitly check if it's *just* a keyword node (not any kind of group)
+                else if (!_isGroup && !_isMainCategory && !_isSubCategory && !_isMiscUncategorizedGroup && !_isSynonymGroup && !_isSingleArticleGroup && !_isOrphanTitleGroup && !_isBioGroup) {
+                     nodeTypeClass = 'keyword-node';
+                } else if (_isGroup) {
+                    // Potentially add a generic 'group-node' class if needed, otherwise handled by specific types
+                }
+                // Add class if it's not the default keyword node
+                if (nodeTypeClass !== 'keyword-node') li.classList.add(nodeTypeClass);
+
+
+                const nodeContentDiv = document.createElement('div');
+                nodeContentDiv.classList.add('node-content');
+
+                const hasChildrenToDisplay = childrenToRender.length > 0 && !(childrenToRender.length === 1 && hideOriginalSynonymChild);
+                const hasDirectTitlesToDisplay = sortedDirectTitles.length > 0;
+
+                const toggle = document.createElement("span");
+                toggle.innerHTML = "▶";
+                toggle.classList.add("toggle-icon");
+                // Hide toggle only if there are absolutely no children OR titles to display underneath
+                if (!hasChildrenToDisplay && !hasDirectTitlesToDisplay) {
+                    toggle.classList.add('hidden');
+                }
+                nodeContentDiv.appendChild(toggle);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('node-name');
+                nameSpan.textContent = displayName;
+                nodeContentDiv.appendChild(nameSpan);
+
+                // Display total count for the subtree if > 0
+                if (totalTitlesInSubtree > 0) {
+                    const countSpan = document.createElement('span');
+                    countSpan.classList.add('node-count');
+                    countSpan.textContent = `(${totalTitlesInSubtree})`;
+                    nodeContentDiv.appendChild(countSpan);
+                }
+                li.appendChild(nodeContentDiv);
+
+
+                const childrenUl = document.createElement("ul");
+                childrenUl.classList.add("nested");
+                let addedContentToUl = false; // Flag to track if UL should be added
+
+                // 1. Render Children (Keywords/Groups)
+                if (hasChildrenToDisplay) {
+                     const sortedChildren = childrenToRender
+                        // Filter out the synonym child if it was merged
+                        .filter(([childKey,]) => !(hideOriginalSynonymChild && childKey.toUpperCase() === displayName.toUpperCase()))
+                        .sort(([, nodeA], [, nodeB]) => {
+                             // Use the same sorting logic as in applySingleArticleGrouping
+                            const isGroupA = nodeA._isGroup || nodeA._isMainCategory || nodeA._isSubCategory || nodeA._isSynonymGroup || nodeA._isSingleArticleGroup || nodeA._isOrphanTitleGroup || nodeA._isBioGroup;
+                            const isGroupB = nodeB._isGroup || nodeB._isMainCategory || nodeB._isSubCategory || nodeB._isSynonymGroup || nodeB._isSingleArticleGroup || nodeB._isOrphanTitleGroup || nodeB._isBioGroup;
+
+                            if (isGroupA && !isGroupB) return -1; // Groups first
+                            if (!isGroupA && isGroupB) return 1;
+
+                            const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA); // Then by count desc
+                            if (countDiff !== 0) return countDiff;
+
+                            return (nodeA._displayName || nodeA.name || '').localeCompare(nodeB._displayName || nodeB.name || ''); // Then by name asc
+                        });
+
+                    sortedChildren.forEach(([childKey, childNode]) => {
+                        childrenUl.appendChild(createNode(childKey, childNode, level + 1));
+                        addedContentToUl = true;
+                    });
+                }
+
+                // 2. Render Direct Titles (potentially grouped)
+                if (hasDirectTitlesToDisplay) {
+                    // appendTitlesToList handles grouping logic and returns true if titles were added
+                    if (appendTitlesToList(childrenUl, sortedDirectTitles, displayName, level + 1)) {
+                        addedContentToUl = true;
+                    }
+                }
+
+                // Append the UL only if it contains children or titles
+                if (addedContentToUl) {
+                    li.appendChild(childrenUl);
+                } else {
+                    // If we ended up with no content in the UL, hide the toggle again
+                    toggle.classList.add('hidden');
+                }
+
+                return li;
+            } // --- End createNode ---
+
+            const rootUl = document.createElement("ul");
+            rootUl.id = "root-keyword-list";
+            Object.entries(treeData)
+                .sort(([, nodeA], [, nodeB]) => { // Sort Top-Level Categories
+                    // Put MISCELLANEOUS last
+                    if (nodeA._isMiscUncategorizedGroup && !nodeB._isMiscUncategorizedGroup) return 1;
+                    if (!nodeA._isMiscUncategorizedGroup && nodeB._isMiscUncategorizedGroup) return -1;
+
+                    // Sort by total titles descending
+                    const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA);
+                    if (countDiff !== 0) return countDiff;
+
+                    // Finally sort by name ascending
+                    const nameA = nodeA._displayName || '';
+                    const nameB = nodeB._displayName || '';
+                    return nameA.localeCompare(nameB);
+                })
+                .forEach(([name, node]) => {
+                    rootUl.appendChild(createNode(name, node, 0)); // Start recursion
+                });
+            return rootUl;
+        }
+
+
+        // --- Display Tree and Add Toggle Listeners ---
+        function displayTree(treeElement) {
+            treeContainer.innerHTML = "";
+            treeContainer.appendChild(treeElement);
+            treeContainer.addEventListener('click', function (event) {
+                const target = event.target;
+                // If the toggle icon itself is clicked
+                if (target.classList.contains('toggle-icon') && !target.classList.contains('hidden')) {
+                    event.stopPropagation(); // Prevent node content click handler
+                    toggleNode(target);
+                }
+                // If clicking anywhere within the node-content area (name, count)
+                else if (target.closest('.node-content')) {
+                    const nodeContent = target.closest('.node-content');
+                    const toggle = nodeContent.querySelector(".toggle-icon");
+                    // If there's a visible toggle, trigger it
+                    if (toggle && !toggle.classList.contains('hidden')) {
+                        event.stopPropagation();
+                        toggleNode(toggle);
+                    }
+                }
+            });
+
+             // Final check to hide toggles for LIs that ended up with no visible children/titles
+            treeContainer.querySelectorAll("li").forEach(li => {
+                 const nodeContent = li.querySelector(":scope > .node-content");
+                 if (!nodeContent) return;
+                 const toggle = nodeContent.querySelector(".toggle-icon");
+                 if (!toggle) return; // Should exist, but safety check
+                 const nestedUl = li.querySelector(":scope > ul.nested");
+                 // Hide if no nested UL exists, or if it exists but is empty
+                 if (!nestedUl || nestedUl.children.length === 0) {
+                     toggle.classList.add('hidden');
+                 } else {
+                     toggle.classList.remove('hidden'); // Ensure it's visible if content exists
+                 }
+             });
+        }
+
+        // --- Toggle Node Function (No changes) ---
+        function toggleNode(toggleElement, forceState = null) {
+            const liElement = toggleElement.closest('li');
+            if (!liElement) return;
+            const nestedUl = liElement.querySelector(":scope > .nested");
+            if (nestedUl) {
+                let shouldBeActive;
+                if (forceState !== null) { shouldBeActive = forceState; }
+                else { shouldBeActive = !nestedUl.classList.contains("active"); }
+                nestedUl.classList.toggle("active", shouldBeActive);
+                toggleElement.innerHTML = shouldBeActive ? "▼" : "▶";
+                toggleElement.classList.toggle('active', shouldBeActive);
+            }
+        }
+
+        // --- Toggle All / Untoggle All (No changes) ---
+        function toggleAll() {
+            const toggles = treeContainer.querySelectorAll('.toggle-icon:not(.hidden)');
+            toggles.forEach(toggle => toggleNode(toggle, true));
+        }
+        function untoggleAll() {
+            const toggles = treeContainer.querySelectorAll('.toggle-icon.active:not(.hidden)');
+            Array.from(toggles).reverse().forEach(toggle => toggleNode(toggle, false));
+        }
+
+        // --- Display Statistics (Updated for BIO group) ---
+        function displayStatistics(sourceTree, intermediateTree, processedTree, originalData) {
+            let sourceNodeCount = 0; function countNodes(node) { if (!node) return; sourceNodeCount++; if (node._children) { Object.values(node._children).forEach(child => countNodes(child)); } } Object.values(sourceTree).forEach(rootNode => countNodes(rootNode));
+
+            const uniqueTitles = paperDetailsMap.size;
+            const totalKeywordsProcessed = originalData.reduce((sum, item) => sum + (item.KeywordsProcessed ? item.KeywordsProcessed.length : 0), 0);
+            const intermediateNodeCount = Object.keys(intermediateTree).length;
+            const finalTopLevelNodeCount = Object.keys(processedTree).length;
+
+            let finalNodeCount = 0;
+            let subCategoryCount = 0;
+            let singleArticleGroupCount = 0;
+            let bioGroupCount = 0; // Counter for the new BIO group
+
+            function traverseFinalTree(node) {
+                if (!node) return;
+                // Count only nodes that aren't generated title groups for "Nodes Displayed"
+                const isGeneratedTitleGroup = node._isOrphanTitleGroup || node._isGeneralTitleGroup;
+                if (!isGeneratedTitleGroup) {
+                    finalNodeCount++;
+                }
+                if (node._isSubCategory) subCategoryCount++;
+                if (node._isSingleArticleGroup) singleArticleGroupCount++;
+                if (node._isBioGroup) bioGroupCount++; // Count BIO groups
+                if (node._children) {
+                    Object.values(node._children).forEach(child => traverseFinalTree(child));
+                }
+            }
+            Object.values(processedTree).forEach(rootNode => traverseFinalTree(rootNode));
+
+            const orphanTitleGroupCount = treeContainer.querySelectorAll('.orphan-title-group').length;
+            const generalTitleGroupCount = treeContainer.querySelectorAll('.general-title-group').length; // Titles grouped because list > threshold
+
+
+            let finalUncategorizedCount = 0;
+            const miscTopLevel = processedTree[MISC_MAIN_CATEGORY_NAME];
+            if (miscTopLevel && miscTopLevel._children) {
+                const finalFallbackSub = miscTopLevel._children[FINAL_UNCATEGORIZED_SUB_NAME];
+                if (finalFallbackSub && finalFallbackSub._children) {
+                     // Count only actual keyword nodes within the final fallback, excluding any generated groups
+                    finalUncategorizedCount = Object.values(finalFallbackSub._children).filter(
+                        node => !node._isSingleArticleGroup && !node._isOrphanTitleGroup && !node._isGeneralTitleGroup && !node._isBioGroup // Exclude all group types
+                    ).length;
+                }
+            }
+            const hasMiscTopLevel = !!miscTopLevel;
+
+
+            statisticsContainer.innerHTML = `
+                 <h5>Statistics</h5>
+                 <p><strong>Source Keyword Nodes (Raw):</strong> ${sourceNodeCount.toLocaleString()}</p>
+                 <p><strong>Nodes after Synonyms/Stemming:</strong> ${intermediateNodeCount.toLocaleString()}</p>
+                 <hr>
+                 <p><strong>Final Structure - Top-Level Categories ${hasMiscTopLevel ? `(Incl. ${MISC_MAIN_CATEGORY_NAME})` : ''}:</strong> ${finalTopLevelNodeCount.toLocaleString()}</p>
+                 <p style="padding-left: 15px;"><strong>↳ Total Nodes Displayed:</strong> ${finalNodeCount.toLocaleString()} (Excludes generated title groups)</p>
+                 <p style="padding-left: 15px;"><strong>↳ Defined Sub-Categories:</strong> ${subCategoryCount.toLocaleString()}</p>
+                 <p style="padding-left: 15px;"><strong>↳ Special 'BIO' Groups:</strong> ${bioGroupCount.toLocaleString()}</p> {/* Added BIO count */}
+                 <p style="padding-left: 15px;"><strong>↳ 'Single-Article Category' Groups:</strong> ${singleArticleGroupCount.toLocaleString()}</p>
+                 <p style="padding-left: 15px;"><strong>↳ Generated Title Groups ('X Titles'):</strong> ${(generalTitleGroupCount + orphanTitleGroupCount).toLocaleString()} (Orphan: ${orphanTitleGroupCount}, General: ${generalTitleGroupCount})</p>
+                  ${hasMiscTopLevel && finalUncategorizedCount > 0 ? `<p style="padding-left: 15px;"><strong>↳ Nodes in ${MISC_MAIN_CATEGORY_NAME} / ${FINAL_UNCATEGORIZED_SUB_NAME}:</strong> ${finalUncategorizedCount.toLocaleString()}</p>` : ''}
+                 <hr>
+                 <p><strong>Total Original Keyword Phrases Processed:</strong> ${totalKeywordsProcessed.toLocaleString()}</p>
+                 <p><strong>Unique Titles Found:</strong> ${uniqueTitles.toLocaleString()}</p>
+             `;
+        }
+
+
+        // --- Search Functionality (No changes) ---
+        function resetSearch() {
+            const highlighted = treeContainer.querySelectorAll('.highlight');
+            highlighted.forEach(span => {
+                const parent = span.parentNode;
+                if (parent) {
+                    parent.replaceChild(document.createTextNode(span.textContent), span);
+                    parent.normalize(); // Clean up adjacent text nodes
+                }
+            });
+             // Collapse all nodes after resetting highlights
+             untoggleAll();
+            searchFeedback.textContent = ""; // Clear feedback message
+        }
+
+        function expandParents(element) {
+            let current = element.parentElement;
+            while (current && current !== treeContainer) {
+                if (current.tagName === 'LI') {
+                     // Find the toggle icon directly within the node-content of this LI
+                    const toggle = current.querySelector(':scope > .node-content > .toggle-icon');
+                    // If a toggle exists, is not hidden, and is not already active, activate it
+                    if (toggle && !toggle.classList.contains('hidden') && !toggle.classList.contains('active')) {
+                        toggleNode(toggle, true); // Force expand
+                    }
+                }
+                current = current.parentElement; // Move up the DOM tree
+            }
+        }
+
+        function highlightText(element, searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            // Use TreeWalker to efficiently find relevant text nodes
+            const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, (node) => {
+                 // Filter: Only accept text nodes whose parents aren't SCRIPT/STYLE or already highlighted
+                return (node.parentElement && node.parentElement.nodeName !== 'SCRIPT' &&
+                    node.parentElement.nodeName !== 'STYLE' &&
+                    !node.parentElement.classList.contains('highlight'))
+                    ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            }, false); // false = do not expand entity references
+
+            let node;
+            const nodesToModify = []; // Collect nodes to avoid issues while iterating
+            while (node = walker.nextNode()) {
+                // Check if the text node's content (lowercase) includes the search term
+                if (node.nodeValue.toLowerCase().includes(lowerSearchTerm)) {
+                    nodesToModify.push(node);
+                }
+            }
+
+             // Process collected text nodes
+            nodesToModify.forEach(textNode => {
+                const nodeValue = textNode.nodeValue;
+                const lcNodeValue = nodeValue.toLowerCase();
+                const parent = textNode.parentNode;
+                if (!parent) return; // Safety check
+
+                const fragment = document.createDocumentFragment(); // Use a fragment for efficiency
+                let lastIndex = 0;
+                let index = lcNodeValue.indexOf(lowerSearchTerm); // Find first match
+
+                while (index !== -1) {
+                    // Append text before the match
+                    fragment.appendChild(document.createTextNode(nodeValue.substring(lastIndex, index)));
+                    // Create and append the highlighted span
+                    const highlightSpan = document.createElement('span');
+                    highlightSpan.classList.add('highlight');
+                    highlightSpan.textContent = nodeValue.substring(index, index + searchTerm.length);
+                    fragment.appendChild(highlightSpan);
+                    // Update lastIndex and find the next match
+                    lastIndex = index + searchTerm.length;
+                    index = lcNodeValue.indexOf(lowerSearchTerm, lastIndex);
+                }
+                // Append any remaining text after the last match
+                fragment.appendChild(document.createTextNode(nodeValue.substring(lastIndex)));
+                // Replace the original text node with the fragment containing highlights
+                parent.replaceChild(fragment, textNode);
+            });
+        }
+
+        function performSearch() {
+            resetSearch(); // Clear previous highlights and collapse tree
+            const searchTerm = searchInput.value.trim();
+            if (!searchTerm) return; // Do nothing if search is empty
+
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            let matchesFound = 0;
+            const matchedElements = new Set(); // Use a Set to automatically handle duplicates
+
+             // Search within node names and title items
+            const elementsToSearch = treeContainer.querySelectorAll('.node-name, .title-item');
+
+            elementsToSearch.forEach(el => {
+                 // Check case-insensitively if the element's text content includes the search term
+                if (el.textContent.toLowerCase().includes(lowerSearchTerm)) {
+                    highlightText(el, searchTerm); // Apply highlighting to the text within the element
+                    matchesFound++;
+                     // Find the closest parent LI element for expansion
+                    const parentLi = el.closest('li');
+                    if (parentLi) {
+                        matchedElements.add(parentLi); // Add the LI to the set for expansion
+                    }
+                }
+            });
+
+             // Expand all parent nodes for each matched element
+            matchedElements.forEach(el => {
+                expandParents(el);
+            });
+
+             // Provide feedback to the user
+            if (matchesFound === 0) {
+                searchFeedback.textContent = "No results found.";
+                searchFeedback.style.color = '#dc3545'; // Red for no results
+            } else {
+                searchFeedback.textContent = `${matchesFound} match${matchesFound > 1 ? 'es' : ''} found.`;
+                searchFeedback.style.color = '#28a745'; // Green for success
+            }
+        }
+
+        // --- Generate JSON Hierarchy for Download (UPDATED with title grouping & BIO group logic) ---
+        function generateJsonHierarchy(nodeName, nodeData) {
+             const {
+                _displayName = nodeName, // Use displayName if available
+                _isGroup = false,
+                _isMainCategory = false,
+                _isSubCategory = false,
+                _isMiscUncategorizedGroup = false,
+                _isSynonymGroup = false,
+                _isSingleArticleGroup = false,
+                _isOrphanTitleGroup = false,
+                _isBioGroup = false, // Check for BIO group
+                _children = {},
+                _titles = new Set()
+            } = nodeData;
+
+            const childrenEntries = Object.entries(_children);
+            const nodeTitles = _titles instanceof Set ? Array.from(_titles).sort() : [];
+
+            const outputNode = {
+                name: _displayName, // Use the determined display name
+                children: [] // Initialize, remove if empty later
+            };
+
+            // --- Handle Synonym Merging for JSON (similar to HTML) ---
+            let childrenToProcess = childrenEntries;
+            let titlesToProcess = [...nodeTitles]; // Create a mutable copy
+            if (_isSynonymGroup && childrenEntries.length === 1) {
+                const [childKey, childNode] = childrenEntries[0];
+                if (childKey.toUpperCase() === _displayName.toUpperCase()) {
+                    // Use grandchildren for processing
+                    childrenToProcess = Object.entries(childNode._children || {});
+                    // Combine titles for processing
+                    const childTitles = childNode._titles instanceof Set ? Array.from(childNode._titles).sort() : [];
+                    // Use Set to ensure uniqueness before sorting
+                    titlesToProcess = [...new Set(titlesToProcess.concat(childTitles))].sort();
+                }
+            }
+
+            // --- 1. Process Children Recursively ---
+            childrenToProcess.forEach(([childKey, childNode]) => {
+                // Avoid adding the merged synonym child itself again
+                if (!(_isSynonymGroup && childrenEntries.length === 1 && childKey.toUpperCase() === _displayName.toUpperCase())) {
+                    outputNode.children.push(generateJsonHierarchy(childKey, childNode));
+                }
+            });
+
+            // --- 2. Process Direct Titles (Papers) - Apply Grouping Logic ---
+            const titleCount = titlesToProcess.length;
+            // Use the same threshold as HTML display for consistency
+            const shouldGroupTitles = titleCount > DIRECT_TITLE_LIST_THRESHOLD;
+
+             // Determine if titles are effectively orphans based on the same logic as HTML generation
+             // Need to check if the *current* nodeData (the parent) has other non-title children
+             const parentHasOtherChildrenForJson = childrenToProcess.length > 0 &&
+                 // Check if any child being processed is NOT a paper (doesn't have a 'value' field)
+                 // This is an approximation as we don't have the final structure yet.
+                 // A more robust check might require passing parent context.
+                 childrenToProcess.some(([ck, cn]) => !(cn.value)); // Simplified check
+
+             const isEffectivelyOrphanForJson = !_isBioGroup && parentHasOtherChildrenForJson && titleCount > ORPHAN_GROUP_THRESHOLD;
+
+            const titleGroupName = `${_displayName} ${ORPHAN_TITLES_SUFFIX}`; // Use current node's name
+
+            if (titleCount > 0) {
+                if (shouldGroupTitles || isEffectivelyOrphanForJson) {
+                    // Create a dedicated group for titles in JSON
+                    const titleGroupNode = {
+                        name: titleGroupName, // Use the generated group name
+                        children: []
+                    };
+                    titlesToProcess.forEach(title => {
+                        if (paperDetailsMap.has(title)) {
+                            // Create a copy of the paper details for the JSON
+                            titleGroupNode.children.push({ ...paperDetailsMap.get(title) });
+                        } else {
+                            // Log warning if a title is missing from the map
+                            console.warn(`JSON Gen: Title "${title}" under "${_displayName}" not in paperDetailsMap.`);
+                        }
+                    });
+                    // Sort papers alphabetically within the title group
+                    titleGroupNode.children.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    // Add the title group node only if it actually contains papers
+                    if (titleGroupNode.children.length > 0) {
+                        outputNode.children.push(titleGroupNode);
+                    }
+                } else {
+                    // Add titles directly as children (leaf nodes) if below threshold or not orphans
+                    titlesToProcess.forEach(title => {
+                        if (paperDetailsMap.has(title)) {
+                            // Create a copy of the paper details
+                            outputNode.children.push({ ...paperDetailsMap.get(title) });
+                        } else {
+                            console.warn(`JSON Gen: Title "${title}" under "${_displayName}" not in paperDetailsMap.`);
+                        }
+                    });
+                }
+            }
+            // --- End Title Processing ---
+
+
+            // --- 3. Sort All Children (Groups first, then papers/keywords/title groups) ---
+            outputNode.children.sort((a, b) => {
+                 // Identify node types for sorting
+                 // Groups have a 'children' array (even if empty temporarily)
+                 const isGroupA = Array.isArray(a.children);
+                 const isGroupB = Array.isArray(b.children);
+                 // Papers have a 'value' and no 'children' array property
+                 const isPaperA = typeof a.value === 'number' && !isGroupA;
+                 const isPaperB = typeof b.value === 'number' && !isGroupB;
+
+                // Prioritize groups over papers/keywords
+                 if (isGroupA && !isGroupB) return -1;
+                 if (!isGroupA && isGroupB) return 1;
+
+                 // If both are groups or both are papers/leaves, sort alphabetically by name
+                 return (a.name || '').localeCompare(b.name || '');
+            });
+
+            // --- 4. Final Cleanup ---
+            if (outputNode.children.length === 0) {
+                 delete outputNode.children; // Remove empty children array for leaf nodes
+                 // Assign 'value: 1' only to actual keyword leaf nodes, not structural groups that became leaves
+                 const isStructuralGroup = _isMainCategory || _isSubCategory || _isMiscUncategorizedGroup || _isSynonymGroup || _isSingleArticleGroup || _isOrphanTitleGroup || _isBioGroup || _isGroup;
+                 if (!isStructuralGroup) {
+                     // Only add value if it's a keyword/term that ended up with no children/titles
+                     outputNode.value = 1; // Standard value for leaf nodes in hierarchical JSON
+                 }
+            }
+
+            return outputNode;
+        }
+
+
+        // --- Download JSON Functionality ---
+        function downloadJson() {
+            if (!currentProcessedTreeData || paperDetailsMap.size === 0) {
+                alert("Please process a file first. No data available for download.");
+                return;
+            }
+
+            try {
+                const rootOutput = {
+                    name: "DIGITAL ARCHITECTURE", // Root node name for the entire structure
+                    children: []
+                };
+                // Generate JSON structure for each top-level category
+                Object.entries(currentProcessedTreeData)
+                    .sort(([, nodeA], [, nodeB]) => { // Sort top-level categories (same logic as HTML display)
+                        if (nodeA._isMiscUncategorizedGroup && !nodeB._isMiscUncategorizedGroup) return 1;
+                        if (!nodeA._isMiscUncategorizedGroup && nodeB._isMiscUncategorizedGroup) return -1;
+                        const countDiff = getTotalTitles(nodeB) - getTotalTitles(nodeA);
+                        if (countDiff !== 0) return countDiff;
+                        return (nodeA._displayName || '').localeCompare(nodeB._displayName || '');
+                    })
+                    .forEach(([name, nodeData]) => {
+                        // Start recursive generation for each top-level node
+                        rootOutput.children.push(generateJsonHierarchy(name, nodeData));
+                    });
+
+                // Convert the final structure to a JSON string
+                const jsonString = JSON.stringify(rootOutput, null, 2); // Pretty print with 2 spaces
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                // Create a temporary link to trigger the download
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "keyword_tree_structure.json"; // Set the filename
+                document.body.appendChild(a); // Append temporarily
+                a.click(); // Trigger download
+                document.body.removeChild(a); // Clean up
+                URL.revokeObjectURL(url); // Release object URL
+            } catch (error) {
+                console.error("Error creating JSON for download:", error);
+                alert("Failed to create JSON file for download. Check console for details.");
+            }
+        }
+
+    </script>
+</body>
+
+</html>

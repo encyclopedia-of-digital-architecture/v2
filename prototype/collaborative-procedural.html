@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowChart</title>
+    <!-- FlowChart.js Kütüphanesinin Yüklenmesi -->
+    <script src="https://balkan.app/js/FlowChart.js" defer></script>
+    <style>
+        /* Sayfa Arka Plan Rengi */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #638DB6 !important; /* Mavi Arka Plan */
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* SVG Arka Plan Rengini Doğrudan Ayarlama */
+        svg {
+            background-color: #638DB6 !important; /* SVG'nin başlangıç arka plan rengi */
+        }
+
+        /* Şekillerin İçindeki Yazıları Beyaz Yap */
+        .flowchart-shape text {
+            fill: #ffffff !important; /* Beyaz Yazı Rengi */
+            font-weight: bold;
+            font-family: "Segoe UI";
+        }
+
+        /* Çizgilerin Rengini Beyaz Yap */
+        .flowchart-link path {
+            stroke: white !important;
+        }
+
+        /* Şekiller Arasında Daha Fazla Boşluk Bırak */
+        .flowchart-shape {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // "myShape" template'ini özelleştiriyoruz, her şekil beyaz olacak
+        FlowChart.shapeTemplates.myShape = class extends FlowChart.shapeTemplates.process {
+            constructor(config) {
+                super(config);
+                this.rect.setAttribute('fill', '#005599');  // Şekil Arka Planını Koyu Mavi Yap
+                this.text.setAttribute('fill', '#ffffff');  // Yazıyı Beyaz Yap
+            }
+        };
+        FlowChart.shapeTemplates.myShape.displayName = 'My Process';
+        FlowChart.shapeTemplates.myShape.minWidth = 270;
+        FlowChart.shapeTemplates.myShape.minHeight = 70;
+
+        // Bağlantıları da özelleştiriyoruz
+        FlowChart.linkTemplates.myLink = class extends FlowChart.linkTemplates.rounded {};
+
+        let chart = new FlowChart('#chart', {
+            scaleMin: 0.1,
+            startPosition: FlowChart.startPosition.fit
+        });
+
+        chart.load({
+            "nodes": [
+                {
+                    "id": 1,
+                    "templateId": "myShape",
+                    "x": 50,    // İlk şekil
+                    "y": 200,
+                    "text": "Collaborative Robotic Masonry",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 2,
+                    "templateId": "myShape",
+                    "x": 600,   // Daha fazla mesafe
+                    "y": 200,
+                    "text": "Human-Robot Collaboration in Masonry",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 3,
+                    "templateId": "myShape",
+                    "x": 600,   // Daha fazla mesafe
+                    "y": 80,
+                    "text": "Fatigue and Posture Detection",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 4,
+                    "templateId": "decision",
+                    "x": 1050,  // Daha fazla mesafe
+                    "y": 200,
+                    "width": 350,
+                    "height": 350,
+                    "text": "Is the mason showing signs of fatigue?",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 5,
+                    "templateId": "myShape",
+                    "x": 1500,  // Daha fazla mesafe
+                    "y": 80,
+                    "text": "Sensor Detects Fatigue or Harmful Posture",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 6,
+                    "templateId": "myShape",
+                    "x": 1500,  // Daha fazla mesafe
+                    "y": 300,
+                    "text": "Robot Assists Mason with Task",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 7,
+                    "templateId": "myShape",
+                    "x": 1500,  // Daha fazla mesafe
+                    "y": 500,
+                    "text": "Fabrication Continues with Reduced Strain",
+                    "fill": "#005599", 
+                    "textFill": "#ffffff"
+                }
+            ],
+            "links": [
+                {
+                    "from": 1,
+                    "to": 2,
+                    "templateId": "myLink"
+                },
+                {
+                    "from": 2,
+                    "to": 3,
+                    "templateId": "myLink"
+                },
+                {
+                    "from": 3,
+                    "to": 4,
+                    "templateId": "myLink"
+                },
+                {
+                    "from": 4,
+                    "to": 5,
+                    "templateId": "myLink"
+                },
+                {
+                    "from": 4,
+                    "to": 6,
+                    "templateId": "myLink"
+                },
+                {
+                    "from": 5,
+                    "to": 7,
+                    "templateId": "myLink"
+                },
+                {
+                    "from": 6,
+                    "to": 7,
+                    "templateId": "myLink"
+                }
+            ]
+        });
+    </script>
+</body>
+</html>

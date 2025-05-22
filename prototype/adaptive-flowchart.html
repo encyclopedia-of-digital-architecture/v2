@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure Flowchart (GoJS)</title>
+    <script src="https://cdn.jsdelivr.net/npm/gojs@3.0.21/release/go.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Figtree:400,600&subset=latin,latin-ext" rel="stylesheet"
+        type="text/css">
+    <style>
+        /* Basic reset and full-height setup */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            /* Prevent scrollbars if diagram+palette fits */
+        }
+
+        /* Use flexbox to arrange palette and diagram */
+        body {
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* Style the Palette container */
+        #myPaletteDiv {
+            width: 120px;
+            /* Adjust width as needed */
+            height: 100%;
+            margin-right: 5px;
+            /* Space between palette and diagram */
+            background-color: #1e293b;
+            /* Match dark theme background */
+            border-right: 1px solid #475569;
+            /* Separator line */
+        }
+
+        /* Make the diagram container fill the remaining space */
+        #myDiagramDiv {
+            flex-grow: 1;
+            /* Take up remaining width */
+            height: 100%;
+            background-color: #1e293b;
+            /* Default to dark theme background */
+        }
+
+        /* Hidden element for font loading */
+        #hidden {
+            font: 600 18px Figtree;
+            opacity: 0;
+            position: absolute;
+            /* Take no space */
+            height: 0;
+            width: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <!-- The DIV for the Palette -->
+    <div id="myPaletteDiv"></div>
+
+    <!-- The DIV for the Diagram -->
+    <div id="myDiagramDiv"></div>
+
+    <!-- Hidden element to force font loading -->
+    <p id="hidden">.</p>
+
+    <script id="code">
+        let myDiagram; // Make diagram object global
+        let myPalette; // Make palette object global
+
+        function init() {
+            // Create the diagram instance
+            myDiagram = new go.Diagram('myDiagramDiv', {
+                'undoManager.isEnabled': true,
+                'themeManager.changesDivBackground': true,
+                'themeManager.currentTheme': 'dark', // Start with dark theme
+                initialContentAlignment: go.Spot.Center,
+                allowZoom: true,
+                allowHorizontalScroll: true,
+                allowVerticalScroll: true,
+                // Allow dropping nodes from the Palette onto the Diagram
+                allowDrop: true,
+                // Define the layout for the diagram
+                layout: new go.LayeredDigraphLayout({ // Example layout
+                    direction: 90, // Arrange top-to-bottom
+                    layerSpacing: 50,
+                    columnSpacing: 30
+                })
+            });
+
+            // Define the themes (Simplified example, adjust colors as needed)
+            myDiagram.themeManager.set('light', {
+                diagram: { background: '#f0f0f0' }, // Example light background
+                colors: {
+                    text: '#003366',
+                    start: '#e6f0fa',
+                    step: '#e6f0fa',
+                    conditional: '#e6f0fa',
+                    end: '#e6f0fa',
+                    comment: '#0066cc',
+                    bgText: '#ffffff',
+                    link: '#005599',
+                    linkOver: '#005599',
+                    div: '#638DB6',
+                    paletteBg: '#e5e7eb',  // Background for palette
+                    paletteBorder: '#d1d5db' // Border for palette
+                }
+            });
+
+            myDiagram.themeManager.set('dark', {
+                diagram: { background: '#1e293b' }, // Dark slate background
+                colors: {
+                    text: '#003366',
+                    start: '#e6f0fa',
+                    step: '#e6f0fa',
+                    conditional: '#e6f0fa',
+                    end: '#e6f0fa',
+                    comment: '#0066cc',
+                    bgText: '#ffffff',
+                    link: '#005599',
+                    linkOver: '#005599',
+                    div: '#638DB6',
+                    paletteBg: '#111827',  // Very dark background for palette
+                    paletteBorder: '#374151' // Border for palette
+                }
+            });
+
+            // Apply theme settings to background elements initially
+            // Apply theme settings to background elements initially
+            function applyThemeBackgrounds(themeName) {
+                const theme = myDiagram.themeManager[themeName]; // Correct way to access the theme
+                if (!theme) { // Add a check in case the themeName is invalid
+                    console.error("Theme not found:", themeName);
+                    return;
+                }
+                if (theme.diagram && theme.diagram.background) {
+                    document.getElementById('myDiagramDiv').style.backgroundColor = theme.diagram.background;
+                }
+                if (theme.colors) {
+                     document.getElementById('myPaletteDiv').style.backgroundColor = theme.colors.paletteBg || '#ffffff'; // Fallback
+                     document.getElementById('myPaletteDiv').style.borderColor = theme.colors.paletteBorder || '#d1d5db'; // Fallback
+                }
+            }
+            // Apply initial theme background
+            applyThemeBackgrounds(myDiagram.themeManager.currentTheme);
+
+            // --- Palette Initialization ---
+            myPalette = new go.Palette('myPaletteDiv', {
+                nodeTemplateMap: myDiagram.nodeTemplateMap, // Share the node templates from the main Diagram
+                themeManager: myDiagram.themeManager,       // Share the theme manager
+                layout: new go.GridLayout({ // Arrange palette items vertically
+                    wrappingColumn: 1,
+                    alignment: go.GridLayout.Location
+                }),
+                // Define the items available in the palette
+                model: new go.GraphLinksModel([ // Palette needs its own model
+                    { category: 'Start', text: 'Start' },
+                    { text: 'Step' }, // Default category is "" (Step)
+                    { category: 'Conditional', text: 'If/Decision' }, // Changed text for clarity
+                    { category: 'End', text: 'End' },
+                    { category: 'Comment', text: 'Comment' }
+                ])
+            });
+            // --- End Palette Initialization ---
+
+
+            defineFigures(); // Define custom shapes like 'Conditional' and 'File'
+
+            // Helper functions for node templates
+            function nodeStyle(node) {
+                node
+                    .set({ locationSpot: go.Spot.Center })
+                // Don't bind location in the template if using a layout
+                // Layouts will handle positioning
+                // .bindTwoWay('location', 'loc', go.Point.parse, go.Point.stringify);
+            }
+
+            function shapeStyle(shape) {
+                shape.set({
+                    strokeWidth: 1, // Give shapes a slight border
+                    portId: '',
+                    cursor: 'pointer',
+                    // Make ports visible on hover for clarity
+                    portSpreading: go.PortSpreading.None // or Uniform
+                })
+                    .theme('stroke', 'text'); // Use text color for stroke, looks good on light/dark
+            }
+
+
+            function textStyle(textblock) {
+                textblock.set({
+                    font: 'bold 11pt Figtree, sans-serif',
+                    textAlign: "center",
+                    wrap: go.Wrap.Fit,
+                    margin: 8,
+                    maxSize: new go.Size(180, NaN),
+                    editable: true
+                }).theme('stroke', 'text'); // Theme the text color itself
+            }
+
+            // --- Define Node templates ---
+            // Default node template (Step)
+            myDiagram.nodeTemplateMap.add("",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("RoundedRectangle", {
+                            name: "SHAPE",
+                            parameter1: 10, // Corner radius
+                            fromLinkable: true, toLinkable: true,
+                            fromSpot: go.Spot.AllSides, toSpot: go.Spot.AllSides,
+                            portId: "" // Define the main body as the port
+                        })
+                            .apply(shapeStyle).theme("fill", "step"), // Theme the fill color
+                        new go.TextBlock().apply(textStyle).bindTwoWay("text")
+                    ));
+
+
+            myDiagram.nodeTemplateMap.add("Conditional",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("Diamond", { // Standard Diamond shape is clearer than custom 'Conditional'
+                            name: "SHAPE",
+                            fromLinkable: true, toLinkable: true,
+                            fromSpot: go.Spot.AllSides, toSpot: go.Spot.AllSides,
+                            portId: ""
+                        })
+                            .apply(shapeStyle).theme("fill", "conditional"),
+                        new go.TextBlock().apply(textStyle).bindTwoWay("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("Start",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("Capsule", { // Or "Circle"
+                            name: "SHAPE",
+                            fromLinkable: true, toLinkable: false, // Can only link from Start
+                            fromSpot: go.Spot.Bottom, toSpot: go.Spot.None, // Limit link points if desired
+                            portId: ""
+                        })
+                            .apply(shapeStyle).theme("fill", "start"),
+                        new go.TextBlock({ margin: new go.Margin(5, 10), editable: true }) // Allow editing Start text
+                            .apply(textStyle).bind("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("End",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("Capsule", { // Or "Circle"
+                            name: "SHAPE",
+                            fromLinkable: false, toLinkable: true, // Can only link to End
+                            fromSpot: go.Spot.None, toSpot: go.Spot.Top, // Limit link points if desired
+                            portId: ""
+                        })
+                            .apply(shapeStyle).theme("fill", "end"),
+                        new go.TextBlock({ margin: new go.Margin(5, 10), editable: true }) // Allow editing End text
+                            .apply(textStyle).bind("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("Comment",
+                new go.Node("Auto").apply(nodeStyle)
+                    .set({ locationObjectName: "SHAPE", fromLinkable: false, toLinkable: false }) // Comments usually don't link from/to
+                    .add(
+                        new go.Shape("File", { // Keep the file shape for comments
+                            name: "SHAPE",
+                            strokeWidth: 1, // Thinner stroke maybe
+                            portId: "" // No ports needed
+                        })
+                            .theme("fill", "div").theme("stroke", "comment"), // Theme fill and stroke
+                        new go.TextBlock({
+                            font: "10pt Figtree, sans-serif", // Slightly smaller font maybe
+                            margin: 8,
+                            maxSize: new go.Size(200, NaN),
+                            wrap: go.Wrap.Fit,
+                            textAlign: "center",
+                            editable: true
+                        })
+                            .theme("stroke", "bgText") // Text color suitable for the 'div' background
+                            .bindTwoWay("text")
+                    ));
+
+
+            // --- Define Link template ---
+            myDiagram.linkTemplate = new go.Link({
+                routing: go.Routing.AvoidsNodes,
+                curve: go.Curve.JumpOver,
+                corner: 10, toShortLength: 4,
+                relinkableFrom: true, relinkableTo: true, reshapable: true, resegmentable: true,
+                mouseEnter: (e, link) => {
+                    link.findObject("HIGHLIGHT").stroke = link.diagram.themeManager.findValue("linkOver", "colors");
+                    link.findObject("ARROW").fill = link.diagram.themeManager.findValue("linkOver", "colors"); // Highlight arrow too
+                },
+                mouseLeave: (e, link) => {
+                    link.findObject("HIGHLIGHT").stroke = "transparent";
+                    link.findObject("ARROW").fill = link.diagram.themeManager.findValue("link", "colors"); // Reset arrow color
+                },
+                // Allow adding label on context click
+                contextClick: (e, link) => {
+                    // Add or edit label
+                    e.diagram.commandHandler.editTextBlock(link.findObject("LABEL"));
+                }
+            })
+                .bindTwoWay("points")
+                .add(
+                    new go.Shape({ isPanelMain: true, strokeWidth: 8, stroke: "transparent", name: "HIGHLIGHT" }), // For hover detection
+                    new go.Shape({ isPanelMain: true, strokeWidth: 2 }).theme("stroke", "link").bind("strokeWidth", "thick", t => t ? 3 : 2), // Base link line
+                    new go.Shape({ name: "ARROW", toArrow: "standard", strokeWidth: 0, scale: 1.5 }).theme("fill", "link"), // Arrow head
+                    new go.Panel("Auto", { segmentIndex: -2, segmentFraction: 0.5 }) // Position label in the middle
+                        // Don't bind visibility, just let editTextBlock handle empty strings
+                        .add(
+                            new go.Shape("RoundedRectangle", { strokeWidth: 0, parameter1: 3 }) // Label background
+                                .theme("fill", "div", null, null, c => `${c}E6`), // Semi-transparent background based on theme, slightly more opaque
+                            new go.TextBlock({
+                                name: "LABEL",
+                                font: "10pt Figtree, sans-serif",
+                                margin: 4,
+                                editable: true,
+                                isMultiline: false, // Keep labels single line unless needed
+                                segmentOffset: new go.Point(0, -10) // Offset label slightly above the link
+                            })
+                                .theme("stroke", "bgText") // Text color suitable for 'div' background
+                                .bindTwoWay("text")
+                        )
+                );
+
+
+            // Define the model data directly in the script
+            const modelData = {
+                "class": "GraphLinksModel",
+                "linkFromPortIdProperty": "fromPort", // Optional: For more precise linking if using multiple ports
+                "linkToPortIdProperty": "toPort",
+                "pointsDigits": 1, // Use fewer digits for points data to save space
+                "nodeDataArray": [
+                    { "key": -1, "category": "Start", "loc": "175 0", "text": "Project Start\nHuman-Robot Collab Goal" },
+                    { "key": 0, "loc": "175 100", "text": "System Setup &\nExhibition Prep" },
+                    { "key": 1, "loc": "0 220", "text": "Fabrication System\n(Effector, Tension Control)" },
+                    { "key": 2, "loc": "175 220", "text": "Robotic Developments\n(IK Solver, Wireless)" }, // Shorter text
+                    { "key": 3, "loc": "350 220", "text": "Computational Strategies\n(Fiber Gen, Motion Plan)" },
+                    { "key": 4, "loc": "175 360", "text": "Collaborative\nFabrication Process" },
+                    { "key": 5, "loc": "50 480", "text": "Wearable Devices\nInstruction Delivery" },
+                    { "key": 6, "loc": "300 480", "text": "Task Trade-off\n(Human vs. Robot)" }, // Shorter text
+                    { "key": 7, "loc": "175 600", "text": "Coordination & Comm.\n(Robot-Human-Device)" },
+                    { "key": 8, "loc": "175 720", "text": "Handling Challenges\n(Deviations, Safety)" },
+                    { "key": 9, "category": "Comment", "loc": "390 720", "text": "Material/Human Errors\nLive Exhibition Safety" },
+                    { "key": -2, "category": "End", "loc": "175 840", "text": "Project Outcomes &\nImplications" } // Shorter text
+                ],
+                "linkDataArray": [
+                    // Added labels for demonstration
+                    { "from": -1, "to": 0, "text": "Initiate" },
+                    { "from": 0, "to": 1, "text": "Develop" },
+                    { "from": 0, "to": 2, "text": "Develop" },
+                    { "from": 0, "to": 3, "text": "Develop" },
+                    { "from": 1, "to": 4, "text": "Integrate" },
+                    { "from": 2, "to": 4, "text": "Integrate" },
+                    { "from": 3, "to": 4, "text": "Integrate" },
+                    { "from": 4, "to": 5, "text": "Input" },
+                    { "from": 4, "to": 6, "text": "Input" },
+                    { "from": 5, "to": 7, "text": "Coordinate" },
+                    { "from": 6, "to": 7, "text": "Coordinate" },
+                    { "from": 7, "to": 8, "text": "Execute" },
+                    { "from": 8, "to": -2, "text": "Conclude" },
+                    // Link from challenge to comment (no arrowhead, dashed?) - Optional styling not added here
+                    { "from": 8, "to": 9 } // Simple link for now
+                ]
+            };
+
+            // Load the model data
+            myDiagram.model = go.Model.fromJson(modelData);
+
+            // Apply layout after model is loaded
+            myDiagram.layoutDiagram(true);
+
+        } // end init
+
+        // Define custom shapes (File) - Using standard Diamond for Conditional now
+        function defineFigures() {
+            /* // Removed custom Conditional, using standard Diamond instead
+            go.Shape.defineFigureGenerator('Conditional', (shape, w, h) => { ... });
+            */
+
+            go.Shape.defineFigureGenerator('File', (shape, w, h) => {
+                const geo = new go.Geometry();
+                const fig = new go.PathFigure(0, 0, true); // Filled
+                geo.add(fig);
+                // Main rectangle
+                fig.add(new go.PathSegment(go.SegmentType.Line, w, 0));
+                fig.add(new go.PathSegment(go.SegmentType.Line, w, h));
+                fig.add(new go.PathSegment(go.SegmentType.Line, 0, h).close());
+                // The "dog-ear" triangle
+                const fig2 = new go.PathFigure(0.7 * w, 0, true); // Filled dog-ear area
+                geo.add(fig2);
+                fig2.add(new go.PathSegment(go.SegmentType.Line, w, 0.3 * h)); // Top-right corner of dog-ear
+                fig2.add(new go.PathSegment(go.SegmentType.Line, w, 0)); // Back to top-right of main rect
+                fig2.add(new go.PathSegment(go.SegmentType.Line, 0.7 * w, 0)); // Back to start
+                // Optional: Add a line segment for the fold
+                const fig3 = new go.PathFigure(0.7 * w, 0, false); // Not filled line
+                geo.add(fig3);
+                fig3.add(new go.PathSegment(go.SegmentType.Line, 0.7 * w, 0.3 * h)); // Line down
+                fig3.add(new go.PathSegment(go.SegmentType.Line, w, 0.3 * h));       // Line across
+
+                geo.spot1 = new go.Spot(0, 0.3); // Adjust spots if needed
+                geo.spot2 = go.Spot.BottomRight;
+                return geo;
+            });
+        }
+
+        // Initialize the diagram when the DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            // Use setTimeout to ensure the font is likely loaded
+            setTimeout(() => {
+                init();
+            }, 150); // Shorter delay might be sufficient
+        });
+
+    </script>
+
+</body>
+
+</html>

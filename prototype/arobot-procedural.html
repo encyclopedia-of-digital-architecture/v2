@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowChart (Düzeltilmiş)</title>
+    <!-- FlowChart.js kütüphanesini yüklüyoruz -->
+    <script src="https://balkan.app/js/FlowChart.js"></script>
+    <style>
+        /* Sayfa ve SVG Arka Plan Rengi */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #638DB6; /* Mavi Arka Plan */
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* SVG Arka Plan Rengini Doğrudan Ayarlama (CSS ile) */
+        /* JavaScript ile ayarlamayı kaldırdık, sadece CSS kullanıyoruz */
+        svg {
+            background-color: #638DB6 !important; /* Mavi Arka Plan */
+        }
+
+        /* Çizgilerin Rengini Beyaz Yap */
+        /* Not: Eğer kütüphane sınıf isimlerini değiştirdiyse bu çalışmayabilir */
+        .flowchart-link path {
+            stroke: white !important;
+        }
+
+        /* Şekiller arası boşluk için CSS marjini genellikle işe yaramaz, kaldırdık. */
+        /* Boşlukları node'ların x/y koordinatları ile ayarlamak daha güvenilirdir. */
+
+    </style>
+</head>
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // *** ÖNEMLİ DEĞİŞİKLİKLER ***
+        // 1. Özel Şablon Tanımları (myShape, myLink) Kaldırıldı:
+        //    Bu kısımlar "class extends value ... is not a constructor or null" hatasına
+        //    neden oluyordu. Muhtemelen kütüphane yüklenemedi veya API değişti.
+        //    Şimdilik varsayılan şablonları ("process", "decision" ve varsayılan link) kullanıyoruz.
+        //    Eğer özel şablonlar gerekiyorsa, Balkan App'in GÜNCEL dokümantasyonuna
+        //    bakarak doğru tanımlama yöntemini bulmalısınız.
+
+        /* ---- Kaldırılan Özel Şablon Kodları ----
+        FlowChart.shapeTemplates.myShape = class extends FlowChart.shapeTemplates.process {
+             constructor(config) {
+                 super(config);
+                 // Renkler artık doğrudan node verisinde tanımlanıyor.
+                 // this.rect.setAttribute('fill', '#005599');
+                 // this.text.setAttribute('fill', '#ffffff');
+             }
+         };
+         FlowChart.shapeTemplates.myShape.displayName = 'My Process';
+         FlowChart.shapeTemplates.myShape.minWidth = 270;
+         FlowChart.shapeTemplates.myShape.minHeight = 70;
+
+         FlowChart.linkTemplates.myLink = class extends FlowChart.linkTemplates.rounded {};
+        ---- Kaldırılan Özel Şablon Kodları Bitişi ---- */
+
+
+        // FlowChart nesnesini oluşturuyoruz
+        let chart = new FlowChart('#chart', {
+            scaleMin: 0.1,
+            startPosition: FlowChart.startPosition.fit
+            // Not: Kütüphanenin arka plan rengini ayarlamak için kendi seçeneği olabilir.
+            // Dokümantasyonda "backgroundColor" gibi bir seçenek arayın.
+            // Örn: backgroundColor: '#638DB6'
+        });
+
+        // FlowChart verisini yüklüyoruz
+        chart.load({
+            "nodes": [
+                // "myShape" yerine varsayılan "process" şablonunu kullanıyoruz.
+                // Renkler doğrudan node verisinde tanımlı kalıyor.
+                {
+                    "id": 1,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 50,
+                    "y": 200,
+                    "text": "[AR]OBOT: AR-Assisted Robotic Fabrication",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 2,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 600,
+                    "y": 200,
+                    "text": "Design in Rhino and Grasshopper",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 3,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 600,
+                    "y": 80,
+                    "text": "Gesture Recognition for Robot Control",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    // Decision şablonu zaten standart, olduğu gibi kalıyor.
+                    "id": 4,
+                    "templateId": "decision",
+                    "x": 1150,
+                    "y": 200,
+                    "width": 350,
+                    "height": 350,
+                    "text": "Does the design need on-site adjustments?",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 5,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 1600,
+                    "y": 80,
+                    "text": "AR Device Visualizes Fabrication Process",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 6,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 1600,
+                    "y": 300,
+                    "text": "Perform Trajectory Planning",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 7,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 1600,
+                    "y": 500,
+                    "text": "Robot Fabricates with Real-Time Feedback",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                },
+                {
+                    "id": 8,
+                    "templateId": "process", // "myShape" yerine "process"
+                    "x": 1950,
+                    "y": 300,
+                    "text": "Holographic Simulation of Robot Actions",
+                    "fill": "#005599",
+                    "textFill": "#ffffff"
+                }
+            ],
+            "links": [
+                // Linklerden "templateId": "myLink" kaldırıldı, varsayılan link kullanılacak.
+                { "from": 1, "to": 2 },
+                { "from": 2, "to": 3 },
+                { "from": 3, "to": 4 },
+                { "from": 4, "to": 5 },
+                { "from": 4, "to": 6 },
+                { "from": 5, "to": 7 },
+                { "from": 6, "to": 7 },
+                { "from": 7, "to": 8 }
+            ]
+        });
+
+        // SVG arka planını JS ile ayarlayan kod kaldırıldı.
+        // Bu artık CSS ile yapılıyor (`svg { background-color: ... }`).
+        /* ---- Kaldırılan Arka Plan Ayarlama Kodu ----
+        chart.onChanged(() => {
+            let svg = document.querySelector('svg');
+            if (svg) {
+                svg.style.backgroundColor = "#005599"; // Veya #638DB6 ? - CSS ile çakışıyordu.
+            }
+        });
+        ---- Kaldırılan Kod Bitişi ---- */
+
+    </script>
+</body>
+</html>
