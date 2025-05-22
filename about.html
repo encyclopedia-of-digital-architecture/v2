@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encyclopedia of Digital Architecture</title>
+  <link rel="stylesheet" href="css/styles2.css">
+  <link rel="icon" type="image/x-icon" href="images/logo.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+  <div class="outer-container-1" id="outerContainer">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-start">
+
+      <div class="header">
+        <div id="logo-box">
+          <a href="index.html">
+            <img src="images/logo.png" alt="Logo">
+          </a>
+        </div>
+        <a href="https://forms.gle/8pcg6xDZQ1Txvz7J7" target="_blank" id="questionnaire-btn"
+          class="btn btn-primary">Questionnaire</a>
+
+        <div class="title">
+          <h1 class="display-4">ENCYCLOPEDIA OF DIGITAL ARCHITECTURE</h1>
+          <p class="lead">A Visual Exploration of Scientific Concepts on Digital Architecture in an Online Encyclopedia
+          </p>
+        </div>
+
+        <!-- Yeni Navbar Linkleri -->
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">
+              <i class="fas fa-home"></i> Homepage
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="guideline.html">
+              <i class="fas fa-info-circle"></i> Guideline
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="about.html">
+              <i class="fas fa-envelope"></i> About
+            </a>
+          </li>
+
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+              aria-haspopup="true" aria-expanded="false">
+              <i class="fas fa-book-open"></i> Co-Learning
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <a class="dropdown-item" href="#">Collaborative Workspace</a>
+              <a class="dropdown-item" href="#">Online Workshops</a>
+              <a class="dropdown-item" href="#">Learning Communities</a>
+              <a class="dropdown-item" href="#">Virtual Studio</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="#" id="open-chat-btn">Chat with AI</a>
+              <a class="dropdown-item" href="#" id="toggle-comments">Add Comments</a>
+            </div>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#profile">
+              <i class="fas fa-user"></i> Profile
+            </a>
+          </li>
+        </ul>
+        <div class="search-container d-flex align-items-center ml-3">
+          <input type="text" id="searchBar" placeholder="Search...">
+          <button id="searchButton"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+
+  <!-- Main Content for the Guideline Page -->
+  <div id="otherContent" class="other-content" style="margin-bottom: 150px; display: none;">
+    <div class="discover1">
+      <b>Discover Digital Architecture:</b>
+      <br />
+      <b>Visual Guide to Scientific Knowledge</b>
+      <br />
+    </div>
+
+    <div class="circle-container">
+      <div class="circle">
+        <span class="circle-text">
+          <p>
+            <br />
+            Welcome to our online platform dedicated to the elucidation of the intricacies inherent in digital
+            architecture. Our digital space has been meticulously designed to facilitate users in the assimilation of
+            scientific concepts inherent in the domain of digital architecture, affording particular emphasis to content
+            emanating from <a href="https://papers.cumincad.org/" target="_blank">CUMINCAD</a> database.
+            <br />
+            <br />
+            Whether one is a seasoned professional, an aspiring student delving into the multifaceted world of
+            architecture, or an enthusiastic explorer seeking to engage with the forefront of developments, our platform
+            is meticulously crafted to traverse the schism between abstruse theoretical constructs and readily
+            accessible understanding.
+            <br />
+            <br />
+            Through a methodical visual exploration of these scientific principles, our objective is to endow users with
+            the capability to navigate and apprehend the nuanced intricacies of digital architecture, all within the
+            confines of an online compendium. We cordially invite you to accompany us on this intellectual odyssey as we
+            unlock the portals to an abundance of knowledge situated at the confluence of technology and design.
+          </p>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Additional Info Circles, initially hidden -->
+  <div class="info-circle-custom info-circle-phd" style="display: none;">
+    <div class="info-circle-text">
+      <h5>This study was conducted as part of a PhD dissertation under the supervision of Assoc. Prof. Dr. Ethem GÜRER.
+        The article derived from the PhD dissertation is available at the following link:</h5>
+      <p>Karacif, E., & Gürer, E. (2025). Taxonomy and representation of digital architecture knowledge: Proposal for an online
+encyclopedia model. <em>Journal of the Faculty of Engineering and Architecture of Gazi
+          University, 40</em>(3), 1509–1524.<br />
+        <a href="https://doi.org/10.17341/gazimmfd.1488572"
+          target="_blank">https://doi.org/10.17341/gazimmfd.1488572</a><br />
+        <a href="https://dergipark.org.tr/tr/pub/gazimmfd/issue/91266/1488572"
+          target="_blank">https://dergipark.org.tr/tr/pub/gazimmfd/issue/91266/1488572</a>
+      </p>
+    </div>
+  </div>
+  <div class="info-circle-custom info-circle-igrs" style="display: none;">
+    <div class="info-circle-text">
+      <h6>The conference paper published as part of the PhD dissertation can be accessed via the following link:</h6>
+
+      <p>Karacif, E., & Gürer, E. (2024). Hierarchical information extraction and structured navigation in architectural
+        design computing: Leveraging machine learning for enhanced research discovery. In <em>Proceedings of the 3rd
+          International Graduate Research Symposium (IGRS’24)</em> (p. 53). <a href="https://igrs.itu.edu.tr/igrs24"
+          target="_blank">https://igrs.itu.edu.tr/igrs24</a></p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // The fetch for navbar.html might need a target container if it's to be used.
+      // For example, if you have <div id="navbar-placeholder"></div> in your HTML:
+      // fetch('navbar.html')
+      //   .then(response => response.text())
+      //   .then(data => {
+      //     const navbarPlaceholder = document.getElementById('navbar-placeholder');
+      //     if (navbarPlaceholder) navbarPlaceholder.innerHTML = data;
+      //   });
+
+      var otherContent = document.getElementById('otherContent');
+      if (otherContent) {
+        otherContent.style.display = 'block'; // Or 'flex' if it's a flex container
+      }
+
+      // Make the new info circles visible
+      var phdCircle = document.querySelector('.info-circle-phd');
+      if (phdCircle) {
+        phdCircle.style.display = 'flex'; // Use 'flex' for internal alignment of text
+      }
+
+      var igrsCircle = document.querySelector('.info-circle-igrs');
+      if (igrsCircle) {
+        igrsCircle.style.display = 'flex'; // Use 'flex' for internal alignment of text
+      }
+    });
+  </script>
+
+  <footer class="footer">
+    <p>© 2025 Encyclopedia of Digital Architecture. All rights reserved.</p>
+  </footer>
+
+  <style>
+    /* Styles for the new information circles */
+    .info-circle-custom {
+      border-radius: 50%;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+      /* Enhanced shadow */
+      display: flex;
+      /* For centering text child */
+      justify-content: center;
+      align-items: center;
+      padding: 50px;
+      /* Increased padding for text to fit better */
+      box-sizing: border-box;
+      position: absolute;
+      z-index: 10;
+    }
+
+    .info-circle-custom .info-circle-text {
+      width: 100%;
+      height: 100%;
+      color: white;
+      font-size: 12pt;
+      /* Requested font size */
+      text-align: center;
+      overflow-y: auto;
+      /* Scrollbar if content overflows */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1.4;
+      /* Improved readability */
+    }
+
+    .info-circle-custom .info-circle-text p {
+      margin-bottom: 0.6em;
+      /* Spacing for paragraphs */
+    }
+
+    .info-circle-custom .info-circle-text em {
+      font-style: italic;
+    }
+
+    .info-circle-custom .info-circle-text a {
+      color: #AEEEEE;
+      /* Light turquoise for links */
+      text-decoration: underline;
+      word-break: break-all;
+      /* Prevent long links from breaking layout */
+    }
+
+    .info-circle-custom .info-circle-text a:hover {
+      color: #FFFFFF;
+      /* White on hover */
+    }
+
+    /* PhD Article Circle (Larger, Darker, Middle-ish) */
+    .info-circle-phd {
+      width: 600px;
+      height: 600px;
+      background-color: #005599;
+      /* Darker blue */
+      top: 220px;
+      /* Adjust as needed based on your navbar height and content flow */
+      left: 40vw;
+      /* Positioned to the right of the main content circle area */
+      z-index: 10;
+    }
+
+    /* IGRS Proceedings Circle (Smaller, Lighter, Right Side) */
+    .info-circle-igrs {
+      width: 450px;
+      height: 450px;
+      background-color: #005599;
+      /* Lighter blue (Bootstrap primary) */
+      top: 465px;
+      /* Slightly lower or adjust for desired layout with PhD circle */
+      right: 8.1vw;
+      /* Positioned on the far right */
+      z-index: 1;
+    }
+
+
+    /* Optional: Custom scrollbar styling for Webkit browsers */
+    .info-circle-custom .info-circle-text::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .info-circle-custom .info-circle-text::-webkit-scrollbar-thumb {
+      background-color: #AEEEEE;
+      border-radius: 10px;
+    }
+
+    .info-circle-custom .info-circle-text::-webkit-scrollbar-track {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+  </style>
+</body>
+
+</html>
