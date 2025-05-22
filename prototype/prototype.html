@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: transparent !important;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        #word-cloud {
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 0px; /* Padding D3 cloud layout içinde ayarlanıyor */
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            top: 5px;
+            right: 5px;
+            overflow: hidden; /* SVG'nin taşmasını engellemeli */
+            display: none;
+            z-index: 998;
+            background-color: #638DB6;
+        }
+        /* Word cloud içindeki SVG'nin div'e tam sığmasını sağlamak için */
+        #word-cloud svg {
+            display: block; /* Satır içi boşlukları kaldırır */
+            width: 100%;
+            height: 100%;
+        }
+
+        #visual-knowledge {
+            font-family: "Segoe UI", sans-serif;
+            padding: 10px;
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: none;
+            z-index: 999;
+            text-align: center;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #688cbc #f0f0f0;
+            background-color: #638DB6;
+            border: 1px solid #005599;
+            border-radius: 0px;
+            box-sizing: border-box;
+        }
+
+        #visual-knowledge::-webkit-scrollbar { width: 8px; }
+        #visual-knowledge::-webkit-scrollbar-track { background: #f0f0f0; }
+        #visual-knowledge::-webkit-scrollbar-thumb { background: #688cbc; border-radius: 4px; }
+        #visual-knowledge::-webkit-scrollbar-thumb:hover { background: #5a7ca6; }
+
+        #gallery {
+            width: 100%;
+            height: auto;
+            margin-top: 10px;
+        }
+
+        #gallery img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .panel-container {
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: none;
+            border: 1px solid #005599;
+            background-color: #638DB6;
+            box-sizing: border-box;
+            padding-bottom: 20px;
+            z-index: 999;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        .panel-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+.resize-handler {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 20px;
+    height: 40px; /* Yüksekliği arttırarak daha görünür hale getirdik */
+    background-color: rgba(19, 95, 182, 1);
+    cursor: ew-resize; /* Yalnızca yatayda hareket etmesini sağlıyoruz */
+    z-index: 1000;
+    border-top-right-radius: 5px;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease; /* Gölgelendirme ve büyütme efekti */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3); /* Daha belirgin bir gölge */
+}
+
+.resize-handler:hover {
+    background-color: rgba(10, 70, 150, 1); /* Hoverda renk değişimi */
+    transform: scale(1.1); /* Hoverda biraz büyümesini sağlıyoruz */
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.5); /* Hoverda daha belirgin gölge */
+}
+
+
+        .sunburst-container {
+            width: 50%;
+            height: 50%;
+            margin-left: 0%;
+            text-overflow: ellipsis;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        .dropdown-menu {
+            border-radius: 0px;
+            border: 1px solid #ccc;
+        }
+        .dropdown-item { border-radius: 0px; }
+        .dropdown-item:hover { background-color: #f8f9fa; border-radius: 0px; }
+
+        .nav-item.dropdown {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            display: none;
+            z-index: 1001;
+        }
+
+        #navbarDropdown {
+            color: #005599;
+            border-radius: 0px;
+            background-color: white;
+            padding: 8px 12px;
+            border: 1px solid #005599;
+            font-size: 14px;
+            font-family: "Segoe UI", sans-serif;
+        }
+        #navbarDropdown i { color: #005599; }
+
+        .dropdown-menu-up {
+            top: auto;
+            bottom: 100%;
+            margin-bottom: 5px;
+        }
+
+        #customTooltip {
+            position: absolute; display: none; background-color: rgba(0, 85, 153, 0.95);
+            color: white; padding: 8px 12px; border-radius: 0px; font-size: 12px;
+            pointer-events: none; z-index: 1100; max-width: 250px; white-space: normal;
+            border: 1px solid #eee;
+            font-family: "Segoe UI", sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sunburst-container" id="sunburst-chart"></div>
+    <div id="word-cloud"></div>
+
+    <div id="visual-knowledge">
+        <div id="gallery"></div>
+    </div>
+
+    <div id="customTooltip"></div>
+
+    <div id="iframe-container" class="panel-container">
+        <div id="resize-handler-procedural" class="resize-handler"></div>
+        <iframe id="collaborative-iframe" style="display: none;"></iframe>
+        <iframe id="arobot-iframe" style="display: none;"></iframe>
+        <iframe id="adaptive-iframe" style="display: none;"></iframe>
+    </div>
+
+    <div id="configurational" class="panel-container">
+        <div id="resize-handler-configurational" class="resize-handler"></div>
+        <iframe id="collaborative-iframe2" style="display: none;"></iframe>
+        <iframe id="arobot-iframe2" style="display: none;"></iframe>
+        <iframe id="adaptive-iframe2" style="display: none;"></iframe>
+    </div>
+
+    <ul class="nav">
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
+                <i class="fas fa-edit"></i> Personalize
+            </a>
+            <ul class="dropdown-menu dropdown-menu-up" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="#">Download</a></li>
+                <li><a class="dropdown-item" href="#">Add a Feature</a></li>
+                <li><a class="dropdown-item" href="#">Add to Favorites</a></li>
+            </ul>
+        </li>
+    </ul>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const personalizeButton = document.querySelector('.nav-item.dropdown');
+            const wordCloudDiv = document.getElementById("word-cloud");
+            const proceduralIframeContainer = document.getElementById('iframe-container');
+            const visualKnowledgeContainer = document.getElementById('visual-knowledge');
+            const galleryDiv = document.getElementById('gallery');
+            const configurationalContainer = document.getElementById('configurational');
+
+            // Sunburst'te en son tıklanan D3 düğümünü saklamak için (görsel vurgu için)
+            let lastClickedSunburstNodeElement = null; 
+            // Sunburst renklerini global olarak tanımla ki resetlerken kullanılabilsin
+            const SUNBURST_COLORS = ["#003366", "#004488", "#005599", "#0066cc", "#0077dd"];
+            const SUNBURST_HIGHLIGHT_COLOR = "#abd0f1"; // Vurgu rengi
+
+            function hideAllPanelsAndContent() {
+                if (wordCloudDiv) { wordCloudDiv.innerHTML = ""; wordCloudDiv.style.display = "none"; }
+                if (proceduralIframeContainer) {
+                    proceduralIframeContainer.style.display = 'none';
+                    proceduralIframeContainer.querySelectorAll('iframe').forEach(iframe => {
+                        iframe.style.display = 'none'; iframe.src = 'about:blank';
+                    });
+                }
+                if (visualKnowledgeContainer) {
+                    if (galleryDiv) galleryDiv.innerHTML = '';
+                    visualKnowledgeContainer.style.display = "none";
+                }
+                if (configurationalContainer) {
+                    configurationalContainer.style.display = 'none';
+                    configurationalContainer.querySelectorAll('iframe').forEach(iframe => {
+                        iframe.style.display = 'none'; iframe.src = 'about:blank';
+                    });
+                }
+                hidePersonalizeButton();
+            }
+
+            function showPersonalizeButton() { if (personalizeButton) personalizeButton.style.display = 'block'; }
+            function hidePersonalizeButton() { if (personalizeButton) personalizeButton.style.display = 'none'; }
+
+            // Panel gösterme fonksiyonları (önce gizleme işlemini yaparlar)
+            function showProceduralIframe(iframeId, src) {
+                hideAllPanelsAndContent();
+                const targetIframe = document.getElementById(iframeId);
+                if (targetIframe) {
+                    targetIframe.src = src;
+                    targetIframe.style.display = 'block';
+                    proceduralIframeContainer.style.display = 'block';
+                    showPersonalizeButton();
+                }
+            }
+            function showIframeWithCollaborativeFC() { showProceduralIframe('collaborative-iframe', 'collaborative-flowchart.html'); }
+            function showIframeWithArobotFC() { showProceduralIframe('arobot-iframe', 'arobot-flowchart.html'); }
+            function showIframeWithAdaptiveFC() { showProceduralIframe('adaptive-iframe', 'adaptive-flowchart.html'); }
+
+            function showVisualImage(imageSrc, altText) {
+                hideAllPanelsAndContent();
+                galleryDiv.innerHTML = '';
+                const image = document.createElement('img');
+                image.src = imageSrc; image.alt = altText;
+                galleryDiv.appendChild(image);
+                visualKnowledgeContainer.style.display = 'block';
+                showPersonalizeButton();
+            }
+            function showImageWithCollaborative() { showVisualImage('../images-visual/collaborative2.jpg', 'Collaborative Image'); }
+            function showImageWithArobot() { showVisualImage('../images-visual/arobot2.jpg', 'Arobot Image'); }
+            function showImageWithAdaptive() { showVisualImage('../images-visual/adaptive2.jpg', 'Adaptive Image'); }
+
+            function showConfigurationalIframe(iframeId, src) {
+                hideAllPanelsAndContent();
+                const targetIframe = document.getElementById(iframeId);
+                if (targetIframe) {
+                    targetIframe.src = src;
+                    targetIframe.style.display = 'block';
+                    configurationalContainer.style.display = 'block';
+                    showPersonalizeButton();
+                }
+            }
+            function showIframeWithCollaborativeIF() { showConfigurationalIframe('collaborative-iframe2', 'collaborative-configurational.html'); }
+            function showIframeWithArobotIF() { showConfigurationalIframe('arobot-iframe2', 'arobot-configurational.html'); }
+            function showIframeWithAdaptiveIF() { showConfigurationalIframe('adaptive-iframe2', 'adaptive-configurational.html'); }
+
+            fetch('json.json')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network error: ' + response.statusText);
+                    return response.json();
+                })
+                .then(data => {
+                    const svg = createSunburstChart(data);
+                    if (svg) document.getElementById('sunburst-chart').appendChild(svg);
+                    else { console.error("Sunburst SVG could not be created."); return; }
+
+                    // SVG'nin kendisine genel bir tıklama dinleyicisi ekle
+                    // Bu, D3 segmentlerine tıklandığında da tetiklenir
+                    svg.addEventListener('click', function (event) {
+                        const clickedElement = event.target; // Tıklanan DOM elementi (path, circle vb.)
+                        if (!clickedElement || !clickedElement.__data__) {
+                            // console.log("Clicked non-D3 element or element without data on SVG.");
+                            return; // D3 verisi olmayan bir şeye tıklandı
+                        }
+                        
+                        const clickedNodeData = clickedElement.__data__; // Tıklanan D3 düğüm verisi
+
+                        // Önceki tıklanan D3 segmentinin rengini resetle (eğer varsa)
+                        if (lastClickedSunburstNodeElement && lastClickedSunburstNodeElement !== clickedElement) {
+                            let nodeToReset = d3.select(lastClickedSunburstNodeElement);
+                            let originalD = nodeToReset.datum(); // D3 verisini al
+                            while (originalD.depth > 1) originalD = originalD.parent;
+                            const baseColor = d3.scaleOrdinal().domain(data.children.map(d_child => d_child.name)).range(SUNBURST_COLORS);
+                            nodeToReset.attr("fill", baseColor(originalD.data.name));
+                        }
+
+                        // Yeni tıklanan segmenti vurgula (eğer bir path ise)
+                        if (clickedElement.tagName.toLowerCase() === 'path') {
+                            d3.select(clickedElement).attr("fill", SUNBURST_HIGHLIGHT_COLOR);
+                            lastClickedSunburstNodeElement = clickedElement; // Son tıklanan DOM elementini sakla
+                        } else {
+                            lastClickedSunburstNodeElement = null; // Merkez daire vb. ise vurguyu kaldır
+                        }
+
+
+                        // ---- İçerik gösterme mantığı ----
+                        if (clickedNodeData && clickedNodeData.data && clickedNodeData.data.name === "Conceptual Knowledge") {
+                            let parentNode = clickedNodeData.parent;
+                            if (parentNode && parentNode.data && parentNode.data.summary) {
+                                hideAllPanelsAndContent();
+                                generateWordCloud(parentNode.data.summary);
+                            } else {
+                                hideAllPanelsAndContent();
+                                generateWordCloud("");
+                            }
+                            return; 
+                        }
+                        else if (clickedNodeData && clickedNodeData.data && clickedNodeData.data.name === "Procedural Knowledge") {
+                            let parentNode = clickedNodeData.parent;
+                            while (parentNode && parentNode.data) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") { showIframeWithCollaborativeFC(); return; }
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") { showIframeWithArobotFC(); return; }
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") { showIframeWithAdaptiveFC(); return; }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                        else if (clickedNodeData && clickedNodeData.data && clickedNodeData.data.name === "Visual Knowledge") {
+                            let parentNode = clickedNodeData.parent;
+                            while (parentNode && parentNode.data) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") { showImageWithCollaborative(); return; }
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") { showImageWithArobot(); return; }
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") { showImageWithAdaptive(); return; }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                        else if (clickedNodeData && clickedNodeData.data && clickedNodeData.data.name === "Configurational Knowledge") {
+                            let parentNode = clickedNodeData.parent;
+                             while (parentNode && parentNode.data) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") { showIframeWithCollaborativeIF(); return; }
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") { showIframeWithArobotIF(); return; }
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") { showIframeWithAdaptiveIF(); return; }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading/processing sunburst data:', error));
+        
+            function createSunburstChart(data) {
+                if (!data || !data.children || !data.children.length) {
+                    console.error("Sunburst data is invalid.");
+                    return null; 
+                }
+                const width = 928; const height = width; const radius = width / 6;
+                
+                const colorScale = d3.scaleOrdinal()
+                    .domain(data.children.map(d_child => d_child.name))
+                    .range(SUNBURST_COLORS);
+
+                const hierarchy = d3.hierarchy(data).sum(d => d.value).sort((a, b) => b.value - a.value);
+                const root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(hierarchy);
+                root.each(d => d.current = d);
+
+                const arc = d3.arc()
+                    .startAngle(d => d.x0).endAngle(d => d.x1)
+                    .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005)).padRadius(radius * 1.5)
+                    .innerRadius(d => d.y0 * radius).outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+                const svg = d3.create("svg")
+                    .attr("viewBox", [-width / 2, -height / 2, width, height])
+                    .style("font", "12px Segoe UI, sans-serif")
+                    .style("width", "100%").style("height", "100%")
+                    .attr("preserveAspectRatio", "xMidYMid meet");
+                
+                // Tıklama ve hover rengi işlevselliği (buradaki `clickedNodeD3` zoom için tıklananı tutar)
+                let zoomedNodeD3 = root; // Başlangıçta root'a zoomlanmış gibi
+
+                const path = svg.append("g").selectAll("path").data(root.descendants().slice(1)).join("path")
+                    .attr("fill", d => { 
+                        let ancestor = d;
+                        while (ancestor.depth > 1) ancestor = ancestor.parent; 
+                        // Eğer lastClickedSunburstNodeElement bu path ise vurgu rengini kullan, değilse normal rengi
+                        if (lastClickedSunburstNodeElement && lastClickedSunburstNodeElement.__data__ === d) {
+                            return SUNBURST_HIGHLIGHT_COLOR;
+                        }
+                        return colorScale(ancestor.data.name);
+                    })
+                    .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+                    .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+                    .attr("d", d => arc(d.current))
+                    .on("mouseenter", function (event, d) {
+                        // Eğer bu segment zaten tıklanmış ve vurgulanmış değilse hover rengini uygula
+                        if (!lastClickedSunburstNodeElement || lastClickedSunburstNodeElement.__data__ !== d) {
+                            d3.select(this).attr("fill", SUNBURST_HIGHLIGHT_COLOR);
+                        }
+                    })
+                    .on("mouseleave", function (event, d) {
+                        // Eğer bu segment zaten tıklanmış ve vurgulanmış değilse orijinal rengine dön
+                         if (!lastClickedSunburstNodeElement || lastClickedSunburstNodeElement.__data__ !== d) {
+                            let originalD = d; while (originalD.depth > 1) originalD = originalD.parent;
+                            d3.select(this).attr("fill", colorScale(originalD.data.name));
+                        }
+                    });
+                    // Path'lere özel zoom click handler'ı
+                path.filter(d => d.children).style("cursor", "pointer")
+                    .on("click.zoom", function(event, p) { // Sadece zoom için
+                        event.stopPropagation(); // SVG'nin genel click event'ini tetiklemesini engelle (isteğe bağlı)
+                        zoomedNodeD3 = p;
+                        handleZoomClick(event, p); 
+                    });
+
+
+                const tooltip = d3.select("#customTooltip");
+                path.on("mouseover.tooltip", function (event, d) {
+                        const hierarchyNames = d.ancestors().reverse().map(anc => anc.data.name);
+                        tooltip.style("display", "block").html(`${hierarchyNames.join(" › <br>")}`);
+                    })
+                    .on("mousemove.tooltip", function (event) { tooltip.style("top", (event.pageY + 10) + "px").style("left", (event.pageX + 10) + "px"); })
+                    .on("mouseout.tooltip", function () { tooltip.style("display", "none"); });
+
+                const label = svg.append("g").attr("pointer-events", "none").attr("text-anchor", "middle").style("user-select", "none")
+                    .selectAll("text").data(root.descendants().slice(1)).join("text")
+                    .attr("dy", "0.35em").attr("fill-opacity", d => +labelVisible(d.current))
+                    .attr("transform", d => labelTransform(d.current))
+                    .text(d => d.data.name.length > 20 ? d.data.name.slice(0, 15) + "..." : d.data.name);
+
+                const parentCircle = svg.append("circle").datum(root).attr("r", radius).attr("fill", "none").attr("pointer-events", "all")
+                    .on("click.zoom", function(event, p) { // Sadece zoom için
+                        event.stopPropagation(); // SVG'nin genel click event'ini tetiklemesini engelle (isteğe bağlı)
+                        zoomedNodeD3 = p; // root'a zoom yapılıyor
+                        // Tıklanan segmentin vurgusunu kaldır
+                        if (lastClickedSunburstNodeElement) {
+                            let nodeToReset = d3.select(lastClickedSunburstNodeElement);
+                            let originalD = nodeToReset.datum();
+                            while (originalD.depth > 1) originalD = originalD.parent;
+                            nodeToReset.attr("fill", colorScale(originalD.data.name));
+                            lastClickedSunburstNodeElement = null;
+                        }
+                        handleZoomClick(event, p);
+                    });
+
+                let parentNameLabel = svg.append("text").attr("dy", "0.3em")
+                    .attr("text-anchor", "middle").style("user-select", "none").attr("fill-opacity", 1)
+                    .style("font-size", "16px").style("font-weight", "bold")
+                    .style("font-family", "Segoe UI, sans-serif")
+                    .text(root.data.name);
+
+                function handleZoomClick(event, p) {
+                    parentCircle.datum(p.parent || root); 
+                    parentNameLabel.text(p.data.name);
+                    root.each(d_node => d_node.target = {
+                        x0: Math.max(0, Math.min(1, (d_node.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                        x1: Math.max(0, Math.min(1, (d_node.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                        y0: Math.max(0, d_node.y0 - p.depth), y1: Math.max(0, d_node.y1 - p.depth)
+                    });
+                    const t = svg.transition().duration(750);
+                    path.transition(t).tween("data", d_node => { const i = d3.interpolate(d_node.current, d_node.target); return ti => d_node.current = i(ti); })
+                        .filter(function (d_node) { return +this.getAttribute("fill-opacity") || arcVisible(d_node.target); })
+                        .attr("fill-opacity", d_node => arcVisible(d_node.target) ? (d_node.children ? 0.6 : 0.4) : 0)
+                        .attr("pointer-events", d_node => arcVisible(d_node.target) ? "auto" : "none")
+                        .attrTween("d", d_node => () => arc(d_node.current));
+                    label.filter(function (d_node) { return +this.getAttribute("fill-opacity") || labelVisible(d_node.target); }).transition(t)
+                        .attr("fill-opacity", d_node => +labelVisible(d_node.target))
+                        .attrTween("transform", d_node => () => labelTransform(d_node.current));
+                }
+                function arcVisible(d) { return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0; }
+                function labelVisible(d) { return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03; }
+                function labelTransform(d) {
+                    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                    const y = (d.y0 + d.y1) / 2 * radius;
+                    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+                }
+                return svg.node();
+            }
+
+            function generateWordCloud(summaryText) {
+                if (!wordCloudDiv) return;
+                wordCloudDiv.innerHTML = ""; 
+                wordCloudDiv.style.display = "block";
+
+                if (!summaryText || summaryText.trim() === "") {
+                    wordCloudDiv.innerHTML = "<p style='color:white; text-align:center; padding-top: 40%; font-size:16px;'>No summary available for word cloud.</p>";
+                    showPersonalizeButton();
+                    return;
+                }
+                const wordData = summaryText.split(/\s+/).reduce((acc, word) => {
+                    word = word.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                    if (word.length > 3) acc[word] = (acc[word] || 0) + 1;
+                    return acc;
+                }, {});
+                const stopwords = ["a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "also", "to", "from", "up", "upon", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "say", "says", "said", "shall", "i", "me", "my", "myself", "we", "us", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "whose", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "will", "would", "should", "can", "could", "ought", "i'm", "you're", "he's", "she's", "it's", "we're", "they're", "i've", "you've", "we've", "they've", "i'd", "you'd", "he'd", "she'd", "we'd", "they'd", "i'll", "you'll", "he'll", "she'll", "we'll", "they'll", "isn't", "aren't", "wasn't", "weren't", "hasn't", "haven't", "hadn't", "doesn't", "don't", "didn't", "won't", "wouldn't", "shan't", "shouldn't", "can't", "cannot", "couldn't", "mustn't", "let's", "that's", "who's", "what's", "here's", "there's", "when's", "where's", "why's", "how's", "ones", "aims", "tries", "kind", "study", "used", "uses", "paper", "design", "robot", "process", "method", "methods", "approach", "result", "results", "analysis", "system", "systems", "data", "research", "based", "example", "figure", "however", "keywords", "introduction", "conclusion", "abstract", "section", "chapter", "article", "journal", "conference", "university", "author", "authors", "et", "al", "fig", "table", "page", "pages"];
+                const filteredWords = Object.entries(wordData)
+                    .filter(([word]) => !stopwords.includes(word) && word.length > 2)
+                    .map(([word, count]) => ({ text: word, size: count * 10 }));
+                if (filteredWords.length === 0) {
+                     wordCloudDiv.innerHTML = "<p style='color:white; text-align:center; padding-top:40%; font-size:16px;'>No significant words found for cloud.</p>";
+                     showPersonalizeButton(); return;
+                }
+
+                // Font size scaling for word cloud (daha küçük max boyut)
+                const maxSize = Math.max(...filteredWords.map(d => d.size));
+                const minSize = Math.min(...filteredWords.map(d => d.size));
+                filteredWords.forEach(d => {
+                    // Max font size'ı düşürerek sığma sorununu azaltmayı dene (örn: * 40 + 10)
+                    d.size = (maxSize === minSize) ? 25 : Math.floor(((d.size - minSize) / (maxSize - minSize)) * 70 + 15);
+                });
+
+                const width = wordCloudDiv.clientWidth; const height = wordCloudDiv.clientHeight;
+                const wordCloudColors = ["#F0F8FF", "#F5F5F5", "#B0C4DE"]; // Açık renkler
+                const layout = d3.layout.cloud()
+                    .size([width, height]).words(filteredWords)
+                    .padding(5) // Padding kelimeler arası boşluk
+                    .rotate(() => (Math.random() > 0.7 ? 0 : (~~(Math.random() * 2) * 90))) 
+                    .font("Segoe UI").fontSize(d => d.size).on("end", draw);
+                layout.start();
+                function draw(words) {
+                    d3.select("#word-cloud svg").remove(); // Varsa eski SVG'yi kaldır
+                    d3.select("#word-cloud").append("svg").attr("width", width).attr("height", height)
+                        .append("g").attr("transform", `translate(${width / 2},${height / 2})`)
+                        .selectAll("text").data(words).enter().append("text")
+                        .style("font-size", d => `${d.size}px`).style("font-family", "Segoe UI")
+                        .style("fill", (d, i) => wordCloudColors[i % wordCloudColors.length]) 
+                        .attr("text-anchor", "middle")
+                        .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`).text(d => d.text);
+                }
+                showPersonalizeButton();
+            }
+            
+            function makeResizable(containerId, handlerId) {
+                const element = document.getElementById(containerId);
+                const resizeHandler = document.getElementById(handlerId);
+                if (!element || !resizeHandler) return;
+                let startX, startY, startWidth, startHeight;
+                resizeHandler.addEventListener("mousedown", function (e) {
+                    e.preventDefault();
+                    startX = e.clientX; startY = e.clientY;
+                    startWidth = element.offsetWidth; startHeight = element.offsetHeight;
+                    document.addEventListener("mousemove", onMouseMove);
+                    document.addEventListener("mouseup", onMouseUp);
+                });
+                function onMouseMove(e) {
+                    const newWidth = startWidth - (e.clientX - startX);
+                    const newHeight = startHeight + (e.clientY - startY);
+                    element.style.width = Math.max(200, newWidth) + "px";
+                    element.style.height = Math.max(150, newHeight) + "px";
+                }
+                function onMouseUp() {
+                    document.removeEventListener("mousemove", onMouseMove);
+                    document.removeEventListener("mouseup", onMouseUp);
+                }
+            }
+            makeResizable('iframe-container', 'resize-handler-procedural');
+            makeResizable('configurational', 'resize-handler-configurational');
+        });
+
+    </script>
+</body>
+</html>

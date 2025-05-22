@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowChart</title>
+    <script src="https://balkan.app/js/FlowChart.js"></script>
+    <style>
+        /* Sayfa Arka Plan Rengi */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #638DB6 !important;
+            /* Mavi Arka Plan */
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* SVG Arka Plan Rengini Doğrudan Ayarlama */
+        svg {
+            background-color: #638DB6 !important;
+            /* SVG'nin başlangıç arka plan rengi */
+        }
+
+        /* Çizgilerin Rengini Beyaz Yap */
+        .flowchart-link path {
+            stroke: white !important;
+        }
+
+        /* Şekiller Arasında Daha Fazla Boşluk Bırak */
+        .flowchart-shape {
+            margin: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // Bağlantıları da özelleştiriyoruz
+        FlowChart.linkTemplates.myLink = class extends FlowChart.linkTemplates.rounded { };
+
+        let chart = new FlowChart('#chart', {
+            scaleMin: 0.1,
+            startPosition: FlowChart.startPosition.fit
+        });
+
+        function fixBackground() {
+            setTimeout(() => {
+                let svg = document.querySelector('svg');
+                if (svg) {
+                    svg.style.background = "#638DB6"; // Mavi arka plan sabit kalacak
+                }
+            }, 50);
+        }
+
+        chart.onChanged(() => {
+            fixBackground();
+        });
+
+        chart.load({
+            "nodes": [
+                { "id": 1, "templateId": "process", "x": 100, "y": 200, "text": "Adaptive Industrial Robot Control for Designers", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 2, "templateId": "process", "x": 500, "y": 200, "text": "3D Modeling with Rhino and Grasshopper", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 3, "templateId": "process", "x": 500, "y": 50, "text": "Interaction with Robot in 3D Space", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 4, "templateId": "decision", "x": 900, "y": 200, "width": 350, "height": 350, "text": "Does the designer need feedback?", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 5, "templateId": "process", "x": 1400, "y": 50, "text": "Receive Visual Feedback via Kinect", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 6, "templateId": "process", "x": 1400, "y": 300, "text": "Adjust Robot Control Parameters", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 7, "templateId": "process", "x": 1400, "y": 550, "text": "Fabricate Object", "fill": "#005599", "textFill": "#ffffff" },
+                { "id": 8, "templateId": "process", "x": 1800, "y": 300, "text": "Improve Collaboration between Designer and Robot", "fill": "#005599", "textFill": "#ffffff" }
+            ],
+            "links": [
+                { "from": 1, "to": 2, "templateId": "myLink" },
+                { "from": 2, "to": 3, "templateId": "myLink" },
+                { "from": 3, "to": 4, "templateId": "myLink" },
+                { "from": 4, "to": 5, "templateId": "myLink" },
+                { "from": 4, "to": 6, "templateId": "myLink" },
+                { "from": 5, "to": 7, "templateId": "myLink" },
+                { "from": 6, "to": 7, "templateId": "myLink" },
+                { "from": 7, "to": 8, "templateId": "myLink" }
+            ]
+        });
+
+        fixBackground();
+    </script>
+</body>
+
+</html>

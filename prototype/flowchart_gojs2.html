@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human-Robot Collaboration Flowchart (GoJS)</title>
+    <script src="https://cdn.jsdelivr.net/npm/gojs@3.0.21/release/go.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Figtree:400,600&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <style>
+        /* Basic reset and full-height setup */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Figtree', sans-serif;
+            overflow: hidden; /* Prevent scrollbars if diagram fits */
+        }
+
+        /* Make the diagram container fill the body */
+        #myDiagramDiv {
+            width: 100%;
+            height: 100%;
+            background-color: #1e293b; /* Default to dark theme background */
+        }
+
+        /* Hidden element for font loading */
+        #hidden {
+            font: 600 18px Figtree;
+            opacity: 0;
+            position: absolute; /* Take no space */
+            height: 0;
+            width: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="myPaletteDiv" style="width: 100px; margin-right: 2px"></div>
+
+
+    <!-- The DIV for the Diagram -->
+    <div id="myDiagramDiv"></div>
+
+    <!-- Hidden element to force font loading -->
+    <p id="hidden">.</p>
+
+    <script id="code">
+        let myDiagram; // Make diagram object global
+        let myPalette; // Make palette object global
+
+        function init() {
+            // Create the diagram instance
+            myDiagram = new go.Diagram('myDiagramDiv', {
+                'undoManager.isEnabled': true,
+                'themeManager.changesDivBackground': true,
+                'themeManager.currentTheme': 'dark',
+                initialContentAlignment: go.Spot.Center,
+                allowZoom: true,
+                allowHorizontalScroll: true,
+                allowVerticalScroll: true
+            });
+
+            // Define the themes
+            myDiagram.themeManager.set('light', {
+                colors: {
+                    text: '#003366',
+                    start: '#e6f0fa',
+                    step: '#e6f0fa',
+                    conditional: '#e6f0fa',
+                    end: '#e6f0fa',
+                    comment: '#0066cc',
+                    bgText: '#ffffff',
+                    link: '#005599',
+                    linkOver: '#005599',
+                    div: '#638DB6'
+                }
+            });
+            
+            myDiagram.themeManager.set('dark', {
+                colors: {
+                    text: '#003366',
+                    start: '#e6f0fa',
+                    step: '#e6f0fa',
+                    conditional: '#e6f0fa',
+                    end: '#e6f0fa',
+                    comment: '#0066cc',
+                    bgText: '#ffffff',
+                    link: '#005599',
+                    linkOver: '#005599',
+                    div: '#638DB6'
+                }
+            });
+            
+            // Set default background color
+            document.getElementById('myDiagramDiv').style.backgroundColor = '#638DB6';
+
+            // Initialize the Palette (left side)
+            myPalette = new go.Palette('myPaletteDiv', {
+                nodeTemplateMap: myDiagram.nodeTemplateMap, // share the templates used by myDiagram
+                themeManager: myDiagram.themeManager, // share the ThemeManager used by myDiagram
+                model: new go.GraphLinksModel([
+                    { category: 'Start', text: 'Start' },
+                    { text: 'Step' },
+                    { category: 'Conditional', text: '???' },
+                    { category: 'End', text: 'End' },
+                    { category: 'Comment', text: 'Comment' }
+                ])
+            });
+
+            defineFigures(); // Define custom shapes like 'Conditional' and 'File'
+
+            // Helper functions for node templates
+            function nodeStyle(node) {
+                node
+                    .set({ locationSpot: go.Spot.Center })
+                    .bindTwoWay('location', 'loc', go.Point.parse, go.Point.stringify);
+            }
+
+            function shapeStyle(shape) {
+                shape.set({ strokeWidth: 0, portId: '', cursor: 'pointer' });
+            }
+
+            function textStyle(textblock) {
+                textblock.set({
+                    font: 'bold 11pt Figtree, sans-serif',
+                    textAlign: "center",
+                    wrap: go.Wrap.Fit,
+                    margin: 8,
+                    maxSize: new go.Size(180, NaN), // Slightly wider max size
+                    editable: true
+                }).theme('stroke', 'text');
+            }
+
+            // Define Node templates
+            myDiagram.nodeTemplateMap.add("", // Default category
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("RoundedRectangle", { fromLinkable: true, toLinkable: true, fromSpot: go.Spot.AllSides, toSpot: go.Spot.AllSides })
+                            .apply(shapeStyle).theme("fill", "step"),
+                        new go.TextBlock().apply(textStyle).bindTwoWay("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("Conditional",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("Conditional", { fromLinkable: true, toLinkable: true }).apply(shapeStyle).theme("fill", "conditional"),
+                        new go.TextBlock().apply(textStyle).bindTwoWay("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("Start",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("Capsule", { fromLinkable: true, toLinkable: false }).apply(shapeStyle).theme("fill", "start"),
+                        new go.TextBlock({ margin: new go.Margin(5, 10), editable: false }).apply(textStyle).bind("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("End",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("Capsule", { fromLinkable: false, toLinkable: true }).apply(shapeStyle).theme("fill", "end"),
+                        new go.TextBlock({ margin: new go.Margin(5, 10), editable: false }).apply(textStyle).bind("text")
+                    ));
+
+            myDiagram.nodeTemplateMap.add("Comment",
+                new go.Node("Auto").apply(nodeStyle)
+                    .add(
+                        new go.Shape("File", { strokeWidth: 2, fromLinkable: false, toLinkable: false })
+                            .theme("fill", "div").theme("stroke", "comment"),
+                        new go.TextBlock({ font: "9pt Figtree, sans-serif", margin: 8, maxSize: new go.Size(200, NaN), wrap: go.Wrap.Fit, textAlign: "center", editable: true })
+                            .theme("stroke", "bgText").bindTwoWay("text")
+                    ));
+
+            // Define Link template
+            myDiagram.linkTemplate = new go.Link({
+                routing: go.Routing.AvoidsNodes, curve: go.Curve.JumpOver,
+                corner: 10, toShortLength: 4,
+                relinkableFrom: true, relinkableTo: true, reshapable: true, resegmentable: true,
+                mouseEnter: (e, link) => (link.findObject("HIGHLIGHT").stroke = link.diagram.themeManager.findValue("linkOver", "colors")),
+                mouseLeave: (e, link) => (link.findObject("HIGHLIGHT").stroke = "transparent"),
+                contextClick: (e, link) => {
+                    if (!link.data.text) {
+                        e.diagram.model.commit(m => m.set(link.data, "text", "Label"));
+                        const label = link.findObject("LABEL");
+                        if (label) e.diagram.commandHandler.editTextBlock(label);
+                    }
+                }
+            })
+                .bindTwoWay("points")
+                .add(
+                    new go.Shape({ isPanelMain: true, strokeWidth: 8, stroke: "transparent", name: "HIGHLIGHT" }),
+                    new go.Shape({ isPanelMain: true, strokeWidth: 2 }).theme("stroke", "link"),
+                    new go.Shape({ toArrow: "standard", strokeWidth: 0, scale: 1.5 }).theme("fill", "link"),
+                    new go.Panel("Auto", { visible: false, segmentIndex: -2, segmentFraction: 0.5 })
+                        .bind("visible", "text", t => typeof t === "string" && t.length > 0)
+                        .add(
+                            new go.Shape("RoundedRectangle", { strokeWidth: 0 })
+                                .theme("fill", "div", null, null, c => `${c}CC`), // Semi-transparent background based on theme
+                            new go.TextBlock({ name: "LABEL", font: "9pt Figtree, sans-serif", margin: 3, editable: true })
+                                .theme("stroke", "bgText").bindTwoWay("text")
+                        )
+                );
+
+            // Define the model data directly in the script
+            const modelData = {
+                "class": "GraphLinksModel",
+                "pointsDigits": 0, // Use fewer digits for points data to save space
+                "nodeDataArray": [
+                    {"key":-1,"category":"Start","loc":"175 0","text":"Project Start\nHuman-Robot Collab Goal"},
+                    {"key":0,"loc":"175 100","text":"System Setup &\nExhibition Prep"},
+                    {"key":1,"loc":"0 220","text":"Fabrication System\n(Effector, Tension Control)"}, 
+                    {"key":2,"loc":"175 220","text":"Robotic Developments\n(Inverse Kinematics Solver, Wireless)"}, 
+                    {"key":3,"loc":"350 220","text":"Computational Strategies\n(Fiber Gen, Motion Plan)"}, 
+                    {"key":4,"loc":"175 360","text":"Collaborative\nFabrication Process"}, 
+                    {"key":5,"loc":"50 480","text":"Wearable Devices\nInstruction Delivery"}, 
+                    {"key":6,"loc":"300 480","text":"Task Trade-off\n(Human vs. Robot Production/Assembly)"}, 
+                    {"key":7,"loc":"175 600","text":"Coordination & Comm.\n(Robot-Human-Device)"}, 
+                    {"key":8,"loc":"175 720","text":"Handling Challenges\n(Deviations, Safety)"}, 
+                    {"key":9,"category":"Comment", "loc":"390 720", "text":"Material/Human Errors\nLive Exhibition Safety"}, 
+                    {"key":-2,"category":"End","loc":"175 840","text":"Project Outcomes & Implications\n(Hybrid Model, Construction Integration)"}
+                ],
+                "linkDataArray": [
+                    {"from":-1,"to":0},
+                    {"from":0,"to":1},
+                    {"from":0,"to":2},
+                    {"from":0,"to":3},
+                    {"from":1,"to":4},
+                    {"from":2,"to":4},
+                    {"from":3,"to":4},
+                    {"from":4,"to":5},
+                    {"from":4,"to":6},
+                    {"from":5,"to":7},
+                    {"from":6,"to":7},
+                    {"from":7,"to":8},
+                    {"from":8,"to":-2},
+                    {"from":8,"to":9}
+                ]
+            };
+
+            // Load the model data
+            myDiagram.model = go.Model.fromJson(modelData);
+
+        } // end init
+
+        // Define custom shapes (Conditional and File)
+        function defineFigures() {
+            go.Shape.defineFigureGenerator('Conditional', (shape, w, h) => {
+                const geo = new go.Geometry();
+                const fig = new go.PathFigure(w * 0.5, 0, true);
+                geo.add(fig);
+                fig.add(new go.PathSegment(go.SegmentType.Line, w, 0.5 * h));
+                fig.add(new go.PathSegment(go.SegmentType.Line, w * 0.5, h));
+                fig.add(new go.PathSegment(go.SegmentType.Line, 0, 0.5 * h));
+                fig.add(new go.PathSegment(go.SegmentType.Line, w * 0.5, 0).close());
+                geo.spot1 = go.Spot.TopSide; geo.spot2 = go.Spot.BottomSide;
+                geo.defaultStretch = go.GraphObject.Uniform;
+                return geo;
+            });
+
+            go.Shape.defineFigureGenerator('File', (shape, w, h) => {
+                const geo = new go.Geometry();
+                const fig = new go.PathFigure(0, 0, true);
+                geo.add(fig);
+                fig.add(new go.PathSegment(go.SegmentType.Line, 0.75 * w, 0));
+                fig.add(new go.PathSegment(go.SegmentType.Line, w, 0.25 * h));
+                fig.add(new go.PathSegment(go.SegmentType.Line, w, h));
+                fig.add(new go.PathSegment(go.SegmentType.Line, 0, h).close());
+                const fig2 = new go.PathFigure(0.75 * w, 0, false);
+                geo.add(fig2);
+                fig2.add(new go.PathSegment(go.SegmentType.Line, 0.75 * w, 0.25 * h));
+                fig2.add(new go.PathSegment(go.SegmentType.Line, w, 0.25 * h));
+                geo.spot1 = new go.Spot(0, 0.25); geo.spot2 = go.Spot.BottomRight;
+                return geo;
+            });
+        }
+
+        // Initialize the diagram when the DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            // Use setTimeout to ensure the font is likely loaded
+            setTimeout(() => {
+                init();
+            }, 150); // Shorter delay might be sufficient
+        });
+
+    </script>
+
+</body>
+</html>

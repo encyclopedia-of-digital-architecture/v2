@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: transparent !important;
+        }
+
+        #word-cloud {
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 0px;
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            /* Sabitleme */
+            top: 10px;
+            /* Üstten 22px mesafe */
+            right: 10px;
+            /* Sağdan 20px mesafe */
+            overflow: hidden;
+            display: none;
+            /* Görünürlüğü kontrol edebilirsin */
+            z-index: 1;
+            background-color: #638DB6;
+        }
+
+
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            position: absolute;
+            top: 620px;
+            right: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            position: absolute;
+            top: 22px;
+            right: 10px;
+        }
+
+        .visual-item {
+            width: 50%;
+            height: 180px;
+            background-color: #f0f0f0;
+            margin-bottom: 20px;
+            text-align: center;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .visual-item img {
+            max-width: 80%;
+            max-height: 80%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        #visual-knowledge {
+            font-family: "Segoe UI", sans-serif;
+            padding: 10px;
+            width: 32vw; /* Slightly wider to accommodate scrollbar without shrinking content */
+            height: 85vh;
+            position: fixed; /* Changed from absolute for consistency with word-cloud */
+            top: 10px; /* Consistent with word-cloud */
+            right: 10px; /* Consistent with word-cloud */
+            display: none;
+            z-index: 999; /* Ensure it's on top */
+            text-align: center;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #688cbc #f0f0f0;
+            background-color: #638DB6; /* Added background for visual consistency */
+            border: 1px solid #005599; /* Added border for visual consistency */
+            border-radius: 10px; /* Optional: for rounded corners */
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Optional: for depth */
+        }
+
+        /* Gallery Container (inside visual-knowledge) */
+        #gallery { /* Changed from .gallery to #gallery as it's an ID */
+            /* border: 1px solid #005599; */ /* Border is on visual-knowledge now */
+            padding: 10px; /* Reduced padding as parent has padding */
+            width: 100%; /* Take full width of parent */
+            height: auto; /* Adjust height based on content */
+            /* position: fixed; */ /* Not needed, it's inside visual-knowledge */
+            overflow: auto; /* Keep if content might overflow gallery itself */
+            display: none; /* Controlled by JS */
+            /* background-color: #638DB6; */ /* Parent has background */
+            /* border-radius: 10px; */ /* Parent has border-radius */
+            /* box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); */ /* Parent has shadow */
+            text-align: center; /* Center the image */
+        }
+
+        #gallery img { /* Changed from .gallery img */
+            max-width: 100%; /* Responsive image */
+            height: auto;   /* Maintain aspect ratio */
+            max-height: 75vh; /* Limit image height within the gallery */
+            object-fit: contain;
+            border-radius: 8px;
+            margin-top: 10px; /* Space above image */
+        }
+
+
+        /* Chrome, Edge ve Safari için scrollbar özelleştirme */
+        #visual-knowledge::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #visual-knowledge::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+
+        #visual-knowledge::-webkit-scrollbar-thumb {
+            background: #688cbc;
+            border-radius: 4px;
+        }
+
+        #visual-knowledge::-webkit-scrollbar-thumb:hover {
+            background: #5a7ca6;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-top: 20px;
+        }
+
+        .visual-item h3 {
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        #iframe-container {
+            padding: 0px;
+            width: 30vw;
+            height: 88.5vh;
+            position: fixed; /* Sabitleme */
+            top: 10px;
+            right: 10px;
+            display: block;
+            transform-origin: bottom left;
+            border: 1px solid #005599;
+            background-color: #638DB6; /* Arka plan rengi ekledim */
+        }
+        #resize-handler {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(19, 95, 182, 1); /* Daha parlak renk */
+            cursor: nwse-resize;
+            border-radius: 0px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8); /* Daha belirgin gölge */
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            z-index: 10; /* Ensure handler is on top of iframe */
+        }
+
+        #resize-handler:hover {
+            transform: scale(1.2); /* Büyütme efekti */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.9); /* Gölgeyi biraz daha artır */
+        }
+
+
+        #configurational {
+            padding: 0px;
+            width: 30vw; /* Adjusted for consistency */
+            height: 88.5vh; /* Adjusted for consistency */
+            position: fixed; /* Sabitleme */
+            top: 10px;
+            right: 10px;
+            display: none;
+            border: 1px solid #005599; /* Added border for consistency */
+            background-color: #638DB6; /* Added background for consistency */
+            /* resize: both; Removed, conflicts with fixed positioning logic */
+        }
+
+
+        .sunburst-container {
+            width: 50%;
+            height: 50%;
+            margin-left: 5%;
+            text-overflow: ellipsis;
+            font-family: "Segoe UI", sans-serif;
+            z-index: 1000;
+            display: flex;
+            /* Eğer bir düzenleme varsa */
+            flex-direction: column;
+            /* Elemanları dikey hizala */
+            gap: 20px;
+            /* İç elemanlar arasındaki boşluk */
+        }
+
+        .visual-container { /* This seems unused for the main sunburst logic, keeping as is */
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 0;
+            width: 30vw;
+            height: 62vh;
+            position: absolute;
+            top: 30px;
+            right: 10px;
+            overflow: hidden;
+            display: none;
+            z-index: 1;
+            background-color: #638DB6;
+        }
+
+        /* Menü öğesinin köşeli olmasını sağlamak için */
+        .dropdown-menu {
+            border-radius: 0px;
+            /* Köşeleri düz yapar (kendi tercihinize göre değiştirebilirsiniz) */
+            border: 1px solid #ccc;
+            /* Kenarlık eklemek için */
+        }
+
+        /* Menü öğelerinin de köşeli görünmesi için */
+        .dropdown-item {
+            border-radius: 0px;
+            /* Menü öğelerinin köşeleri düz olur */
+        }
+
+        /* Menü üzerine geldiğinde değişiklik yapabilirsiniz */
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            /* Hover rengini değiştirmek için */
+            border-radius: 0px;
+            /* Hover durumunda da köşeleri düz tutuyoruz */
+        }
+
+        .nav-item.dropdown {
+            position: fixed; /* Changed to fixed for consistent positioning */
+            bottom: 20px; /* Positioned at the bottom */
+            right: 10px;
+            display: none;
+            border-radius: 0px;
+            z-index: 1001; /* Ensure dropdown is above other elements */
+        }
+
+        /* Personalize metni ve ikon rengi */
+        #navbarDropdown {
+            color: #005599;
+            /* Personalize metni ve ikon için renk */
+            border-radius: 0px;
+            background-color: white; /* Added background for better visibility */
+            padding: 10px 15px; /* Added padding */
+            border: 1px solid #005599; /* Added border */
+        }
+
+        #navbarDropdown i {
+            color: #005599;
+            /* İkon rengi */
+        }
+
+        /* Ekranın sağ tarafına hizalamak için ml-auto kullanın */
+        .ml-auto {
+            margin-left: auto !important;
+        }
+
+        /* Dropdown menüsünün yukarıya açılmasını sağlamak */
+        .dropdown-menu-up {
+            top: auto;
+            bottom: 100%;
+            transform: translateY(-5px);
+            /* İsteğe bağlı, küçük bir boşluk ekler */
+        }
+
+        #customTooltip {
+            position: absolute;
+            display: none;
+            background-color: rgba(0, 85, 153, 0.9);
+            /* Slightly more opaque */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 0px;
+            font-size: 12px;
+            font-family: "Segoe UI", sans-serif;
+            pointer-events: none;
+            /* Crucial */
+            z-index: 1100;
+            max-width: 250px;
+            white-space: normal;
+            border: 1px solid #eee;
+            /* Optional border */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sunburst-container" id="sunburst-chart"></div>
+    <div id="word-cloud"></div>
+    <!-- <div id="flowchart"></div> --> <!-- This div seems unused, flowcharts are in iframes -->
+    <!-- <div id="tree-container"></div> --> <!-- This div seems unused -->
+    <!-- <div id="visual-container" class="visual-container"></div> --> <!-- This div seems unused for sunburst logic -->
+    
+    <div id="visual-knowledge">
+        <div id="gallery">
+            <!-- Images will be loaded here -->
+        </div>
+    </div>
+
+    <div id="customTooltip" style="position: absolute; display: none; pointer-events: none;" class="p-2 rounded shadow">
+    </div>
+
+    <!-- Iframe container for Procedural Knowledge -->
+    <div id="iframe-container" style="display: none;">
+        <div id="resize-handler"></div>
+        <iframe id="collaborative-iframe" style="display: none;" width="100%" height="calc(100% - 20px)"></iframe>
+        <iframe id="arobot-iframe" style="display: none;" width="100%" height="calc(100% - 20px)"></iframe>
+        <iframe id="adaptive-iframe" style="display: none;" width="100%" height="calc(100% - 20px)"></iframe>
+    </div>
+
+    <!-- Iframe container for Configurational Knowledge -->
+    <div id="configurational" style="display: none;">
+        <!-- Note: Iframes here have ID suffix "2". Resize handler could be added here too if needed -->
+        <iframe id="collaborative-iframe2" style="display: none;" width="100%" height="100%"></iframe>
+        <iframe id="arobot-iframe2" style="display: none;" width="100%" height="100%"></iframe>
+        <iframe id="adaptive-iframe2" style="display: none;" width="100%" height="100%"></iframe>
+    </div>
+
+    <!-- This gallery div with iframes seems redundant or for a different purpose than Visual Knowledge images -->
+    <!-- <div id="gallery" style="display: none;">
+        <iframe id="collaborative-iframe3" style="display: none;" width="100%" height="630px"></iframe>
+        <iframe id="arobot-iframe3" style="display: none;" width="100%" height="630px"></iframe>
+        <iframe id="adaptive-iframe3" style="display: none;" width="100%" height="630px"></iframe>
+    </div> -->
+
+
+    <ul class="nav ml-auto"> <!-- This ml-auto might not be effective with fixed positioning -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" <!-- Use data-bs-toggle for Bootstrap 5 -->
+                aria-expanded="false">
+                <i class="fas fa-edit"></i> Personalize
+            </a>
+            <ul class="dropdown-menu dropdown-menu-up" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="#">Download</a></li>
+                <li><a class="dropdown-item" href="#">Add a Feature</a></li>
+                <li><a class="dropdown-item" href="#">Add to Favorites</a></li>
+            </ul>
+        </li>
+    </ul>
+
+    <script>
+        // Bootstrap 5 dropdown initialization (if not using data-bs-toggle, or for more control)
+        // var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'))
+        // var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+        //   return new bootstrap.Dropdown(dropdownToggleEl)
+        // })
+        // Click listener for Bootstrap 4 style dropdown (data-toggle)
+        // If using Bootstrap 5, data-bs-toggle="dropdown" handles this automatically.
+        // However, your Bootstrap JS loads are mixed (4 & 5). Sticking to one is better.
+        // This script assumes Bootstrap 4 behavior for the dropdown if data-bs-toggle is not used or Bootstrap 5 JS is not fully effective.
+        var dropdown = document.getElementById('navbarDropdown');
+        if (dropdown) { // Check if element exists
+            dropdown.addEventListener('click', function (event) {
+                event.preventDefault(); // Prevent default link behavior
+                var menu = this.nextElementSibling;
+                if (menu) { // Check if menu exists
+                    menu.classList.toggle('show');
+                }
+            });
+        }
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const personalizeButton = document.querySelector('.nav-item.dropdown');
+            const wordCloudDiv = document.getElementById("word-cloud");
+            const proceduralIframeContainer = document.getElementById('iframe-container');
+            const visualKnowledgeContainer = document.getElementById('visual-knowledge');
+            const galleryDiv = document.getElementById('gallery'); // Specific gallery for images
+            const configurationalContainer = document.getElementById('configurational');
+
+            // Helper to hide all content panels
+            function hideAllPanels() {
+                if (wordCloudDiv) wordCloudDiv.style.display = "none";
+                if (proceduralIframeContainer) proceduralIframeContainer.style.display = "none";
+                if (visualKnowledgeContainer) visualKnowledgeContainer.style.display = "none";
+                if (galleryDiv) galleryDiv.style.display = "none"; // gallery is inside visualKnowledge, but good to be explicit
+                if (configurationalContainer) configurationalContainer.style.display = "none";
+                
+                // Hide all iframes within procedural container
+                const allProceduralIframes = proceduralIframeContainer.querySelectorAll('iframe');
+                allProceduralIframes.forEach(iframe => {
+                    iframe.style.display = 'none';
+                    iframe.src = 'about:blank'; // Clear content
+                });
+
+                // Hide all iframes within configurational container
+                const allConfigIframes = configurationalContainer.querySelectorAll('iframe');
+                allConfigIframes.forEach(iframe => {
+                    iframe.style.display = 'none';
+                    iframe.src = 'about:blank'; // Clear content
+                });
+                
+                hidePersonalizeButton();
+            }
+
+            function showPersonalizeButton() {
+                if (personalizeButton) personalizeButton.style.display = 'block';
+            }
+            function hidePersonalizeButton() {
+                if (personalizeButton) personalizeButton.style.display = 'none';
+            }
+
+            // --- Clear functions ---
+            function clearWordCloud() {
+                if (wordCloudDiv) {
+                    wordCloudDiv.innerHTML = "";
+                    wordCloudDiv.style.display = "none";
+                }
+            }
+
+            function clearProceduralKnowledge() { // Renamed for clarity
+                if (proceduralIframeContainer) {
+                    proceduralIframeContainer.style.display = 'none';
+                    const allIframes = proceduralIframeContainer.querySelectorAll('iframe');
+                    allIframes.forEach(iframe => {
+                        iframe.style.display = 'none';
+                        iframe.src = 'about:blank'; // Clear content to prevent memory leaks or sound playing
+                    });
+                }
+            }
+            
+            function clearVisualKnowledgeContent() { // Renamed
+                if (galleryDiv) { // Clear the gallery inside visual-knowledge
+                    galleryDiv.innerHTML = ''; 
+                    galleryDiv.style.display = 'none';
+                }
+                if (visualKnowledgeContainer) { // Hide the main container
+                    visualKnowledgeContainer.style.display = "none";
+                }
+            }
+
+            function clearConfigurationalKnowledge() { // Renamed
+                if (configurationalContainer) {
+                    configurationalContainer.style.display = 'none';
+                    const allIframes = configurationalContainer.querySelectorAll('iframe');
+                    allIframes.forEach(iframe => {
+                        iframe.style.display = 'none';
+                        iframe.src = 'about:blank';
+                    });
+                }
+            }
+
+
+            // --- Show functions for Procedural Knowledge (uses #iframe-container) ---
+            function showProceduralIframe(iframeId, src) {
+                if (!proceduralIframeContainer) return;
+                const allIframes = proceduralIframeContainer.querySelectorAll('iframe');
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                const targetIframe = document.getElementById(iframeId);
+                if (targetIframe) {
+                    targetIframe.src = src;
+                    targetIframe.style.display = 'block';
+                    proceduralIframeContainer.style.display = 'block';
+                    showPersonalizeButton();
+                }
+            }
+            function showIframeWithCollaborativeFC() {
+                showProceduralIframe('collaborative-iframe', 'collaborative-flowchart.html');
+            }
+            function showIframeWithArobotFC() {
+                showProceduralIframe('arobot-iframe', 'arobot-flowchart.html');
+            }
+            function showIframeWithAdaptiveFC() {
+                showProceduralIframe('adaptive-iframe', 'adaptive-flowchart.html');
+            }
+
+            // --- Show functions for Visual Knowledge (uses #visual-knowledge and #gallery) ---
+            function showVisualImage(imageSrc, altText) {
+                if (!galleryDiv || !visualKnowledgeContainer) return;
+                
+                galleryDiv.innerHTML = ''; // Clear previous image
+                const image = document.createElement('img');
+                image.src = imageSrc;
+                image.alt = altText;
+                // Styles for image are in CSS now, but can override here if needed
+                // image.style.width = "90%"; 
+                // image.style.height = "auto";
+                galleryDiv.appendChild(image);
+
+                galleryDiv.style.display = 'block';
+                visualKnowledgeContainer.style.display = 'block';
+                showPersonalizeButton();
+            }
+            function showImageWithCollaborative() {
+                showVisualImage('../images-visual/collaborative2.jpg', 'Collaborative Image');
+            }
+            function showImageWithArobot() {
+                showVisualImage('../images-visual/arobot2.jpg', 'Arobot Image');
+            }
+            function showImageWithAdaptive() {
+                showVisualImage('../images-visual/adaptive2.jpg', 'Adaptive Image');
+            }
+            
+            // --- Show functions for Configurational Knowledge (uses #configurational) ---
+            function showConfigurationalIframe(iframeId, src) {
+                if (!configurationalContainer) return;
+                const allIframes = configurationalContainer.querySelectorAll('iframe');
+                allIframes.forEach(iframe => iframe.style.display = 'none');
+
+                const targetIframe = document.getElementById(iframeId); // e.g., 'collaborative-iframe2'
+                 if (targetIframe) {
+                    targetIframe.src = src;
+                    targetIframe.style.display = 'block';
+                    configurationalContainer.style.display = 'block';
+                    showPersonalizeButton();
+                } else {
+                    console.error("Configurational iframe not found:", iframeId);
+                }
+            }
+            function showIframeWithCollaborativeIF() {
+                showConfigurationalIframe('collaborative-iframe2', 'collaborative-configurational.html');
+            }
+            function showIframeWithArobotIF() {
+                showConfigurationalIframe('arobot-iframe2', 'arobot-configurational.html');
+            }
+            function showIframeWithAdaptiveIF() {
+                showConfigurationalIframe('adaptive-iframe2', 'adaptive-configurational.html');
+            }
+
+
+            // Sunburst chart tıklama işlemi
+            fetch('json.json') // Make sure json.json is in the correct path
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const svg = createSunburstChart(data);
+                    document.getElementById('sunburst-chart').appendChild(svg);
+
+                    svg.addEventListener('click', function (event) {
+                        const clickedElement = event.target;
+                        if (!clickedElement || !clickedElement.__data__) return; // Not a sunburst segment
+                        
+                        const clickedNode = clickedElement.__data__;
+
+                        // Her tıklamada tüm içerikleri temizle ve panelleri gizle
+                        clearWordCloud();
+                        clearProceduralKnowledge();
+                        clearVisualKnowledgeContent();
+                        clearConfigurationalKnowledge();
+                        // hideAllPanels(); // Alternative comprehensive clear
+
+                        if (clickedNode && clickedNode.data && clickedNode.data.name === "Conceptual Knowledge") {
+                            let parentNode = clickedNode.parent;
+                            while (parentNode) {
+                                if (parentNode.data && parentNode.data.summary) {
+                                    const summaryText = parentNode.data.summary;
+                                    generateWordCloud(summaryText); // Wordcloud oluştur ve personalize butonunu gösterir
+                                    // REMOVED: showIframe(); // This was causing an error
+                                    return; 
+                                }
+                                parentNode = parentNode.parent; 
+                            }
+                        }
+                        else if (clickedNode && clickedNode.data && clickedNode.data.name === "Procedural Knowledge") {
+                            let parentNode = clickedNode.parent;
+                            while (parentNode && parentNode.data) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showIframeWithCollaborativeFC(); return;
+                                }
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showIframeWithArobotFC(); return;
+                                }
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showIframeWithAdaptiveFC(); return;
+                                }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                        else if (clickedNode && clickedNode.data && clickedNode.data.name === "Visual Knowledge") {
+                            let parentNode = clickedNode.parent;
+                            while (parentNode && parentNode.data) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showImageWithCollaborative(); return;
+                                }
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showImageWithArobot(); return;
+                                }
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showImageWithAdaptive(); return;
+                                }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                        else if (clickedNode && clickedNode.data && clickedNode.data.name === "Configurational Knowledge") {
+                            let parentNode = clickedNode.parent;
+                             while (parentNode && parentNode.data) {
+                                if (parentNode.data.name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showIframeWithCollaborativeIF(); return;
+                                }
+                                if (parentNode.data.name === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showIframeWithArobotIF(); return;
+                                }
+                                if (parentNode.data.name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showIframeWithAdaptiveIF(); return;
+                                }
+                                parentNode = parentNode.parent;
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching or processing sunburst data:', error));
+        });
+
+        // Sunburst grafiğini oluştur
+        function createSunburstChart(data) {
+            const width = 928;
+            const height = width;
+            const radius = width / 6;
+            const color = d3.scaleOrdinal()
+                .domain(data.children.map(d => d.name)) // Use names for domain if they are unique identifiers for colors
+                .range(["#003366", "#004488", "#005599", "#0066cc", "#0077dd"]);
+
+            const hierarchy = d3.hierarchy(data)
+                .sum(d => d.value)
+                .sort((a, b) => b.value - a.value);
+
+            const root = d3.partition()
+                .size([2 * Math.PI, hierarchy.height + 1])
+                (hierarchy);
+            root.each(d => d.current = d);
+
+            const arc = d3.arc()
+                .startAngle(d => d.x0)
+                .endAngle(d => d.x1)
+                .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                .padRadius(radius * 1.5)
+                .innerRadius(d => d.y0 * radius)
+                .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+            const svg = d3.create("svg")
+                .attr("viewBox", [-width / 2, -height / 2, width, height])
+                .style("font", "12px sans-serif")
+                .style("font-family", "Segoe UI")
+                .style("width", "100%")
+                .style("height", "100%")
+                .attr("preserveAspectRatio", "xMidYMid meet");
+            
+            let clickedNodeD3 = null; // Tıklanan D3 düğümünü saklamak için
+
+            const path = svg.append("g")
+                .selectAll("path")
+                .data(root.descendants().slice(1))
+                .join("path")
+                .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
+                .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+                .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+                .attr("d", d => arc(d.current))
+                .on("mouseenter", function (event, d) {
+                    if (clickedNodeD3 !== d) {
+                        d3.select(this).attr("fill", "#abd0f1");
+                    }
+                })
+                .on("mouseleave", function (event, d) {
+                    if (clickedNodeD3 !== d) {
+                        let originalD = d; // Keep original d for color calculation
+                        while (originalD.depth > 1) originalD = originalD.parent;
+                        d3.select(this).attr("fill", color(originalD.data.name));
+                    }
+                })
+                .on("click", function (event, d) { // This click is for visual feedback on sunburst
+                    if (clickedNodeD3 && clickedNodeD3 !== d) {
+                        let originalClickedD3 = clickedNodeD3;
+                        while (originalClickedD3.depth > 1) originalClickedD3 = originalClickedD3.parent;
+                        d3.selectAll("path")
+                            .filter(dd => dd === clickedNodeD3)
+                            .attr("fill", color(originalClickedD3.data.name));
+                    }
+                    clickedNodeD3 = d;
+                    d3.select(this).attr("fill", "#abd0f1"); // Highlight clicked segment
+
+                    // Actual logic for showing content is handled by the SVG's main click listener
+                    // Propagate click to the main SVG listener if needed, or handle zoom here too
+                    // For zoom:
+                    // clicked(event, d); // Call the zoom function
+                });
+
+            path.filter(d => d.children)
+                .style("cursor", "pointer")
+                .on("click", function(event, p) { // This click is for zooming
+                     // Reset visual highlight for previously clicked node
+                    if (clickedNodeD3 && clickedNodeD3 !== p) {
+                        let originalClickedD3 = clickedNodeD3;
+                        while (originalClickedD3.depth > 1) originalClickedD3 = originalClickedD3.parent;
+                        d3.selectAll("path")
+                            .filter(dd => dd === clickedNodeD3)
+                            .attr("fill", color(originalClickedD3.data.name));
+                    }
+                    
+                    clickedNodeD3 = p; // Update the visually clicked node
+                    d3.select(this).attr("fill", "#abd0f1"); // Highlight new one
+
+                    // Call the actual zoom logic
+                    handleZoomClick(event, p); 
+                });
+
+
+            const format = d3.format(",d");
+            const tooltip = d3.select("#customTooltip");
+
+            path
+                .on("mouseover.tooltip", function (event, d) { // Added .tooltip namespace
+                    const hierarchyNames = d.ancestors().reverse().map(ancestor => ancestor.data.name);
+                    tooltip
+                        .style("display", "block")
+                        .html(`${hierarchyNames.join(" › <br>")}`);
+                })
+                .on("mousemove.tooltip", function (event) { // Added .tooltip namespace
+                    tooltip
+                        .style("top", (event.pageY + 10) + "px")
+                        .style("left", (event.pageX + 10) + "px");
+                })
+                .on("mouseout.tooltip", function () { // Added .tooltip namespace
+                    tooltip.style("display", "none");
+                });
+
+            const label = svg.append("g")
+                .attr("pointer-events", "none")
+                .attr("text-anchor", "middle")
+                .style("user-select", "none")
+                .selectAll("text")
+                .data(root.descendants().slice(1))
+                .join("text")
+                .attr("dy", "0.35em")
+                .attr("fill-opacity", d => +labelVisible(d.current))
+                .attr("transform", d => labelTransform(d.current))
+                .text(d => d.data.name.length > 20 ? d.data.name.slice(0, 15) + "..." : d.data.name);
+
+            const parentCircle = svg.append("circle") // Renamed from parent to avoid conflict
+                .datum(root)
+                .attr("r", radius)
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .on("click", function(event, p) { // This click is for zooming out (to root)
+                    // Reset visual highlight
+                    if (clickedNodeD3) {
+                        let originalClickedD3 = clickedNodeD3;
+                        while (originalClickedD3.depth > 1) originalClickedD3 = originalClickedD3.parent;
+                         d3.selectAll("path")
+                            .filter(dd => dd === clickedNodeD3)
+                            .attr("fill", color(originalClickedD3.data.name));
+                        clickedNodeD3 = null; 
+                    }
+                    handleZoomClick(event, p);
+                });
+
+
+            let parentNameLabel = svg.append("text")
+                .attr("dy", "0.5em")
+                .attr("text-anchor", "middle")
+                .style("user-select", "none")
+                .attr("fill-opacity", 1)
+                .style("font-size", "18px")
+                .style("font-family", "Segoe UI")
+                .style("font-weight", "bold")
+                .text(root.data.name);
+
+            function handleZoomClick(event, p) { // Renamed from clicked to avoid conflict
+                // Set the parent circle's datum to the clicked segment's parent, or root if no parent (or if at depth 1)
+                parentCircle.datum(p.parent || root); 
+                parentNameLabel.text(p.data.name); // Display name of the currently focused segment
+
+                root.each(d => d.target = {
+                    x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                    x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                    y0: Math.max(0, d.y0 - p.depth),
+                    y1: Math.max(0, d.y1 - p.depth)
+                });
+
+                const t = svg.transition().duration(750);
+
+                path.transition(t)
+                    .tween("data", d => {
+                        const i = d3.interpolate(d.current, d.target);
+                        return ti => d.current = i(ti);
+                    })
+                    .filter(function (d) {
+                        return +this.getAttribute("fill-opacity") || arcVisible(d.target);
+                    })
+                    .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
+                    .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+                    .attrTween("d", d => () => arc(d.current));
+
+                label.filter(function (d) {
+                    return +this.getAttribute("fill-opacity") || labelVisible(d.target);
+                }).transition(t)
+                    .attr("fill-opacity", d => +labelVisible(d.target))
+                    .attrTween("transform", d => () => labelTransform(d.current));
+            }
+
+            function arcVisible(d) {
+                return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+            }
+
+            function labelVisible(d) {
+                return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+            }
+
+            function labelTransform(d) {
+                const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                const y = (d.y0 + d.y1) / 2 * radius;
+                return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+            }
+            return svg.node();
+        }
+
+        // ----------------------------------------WORDCLOUD
+        function generateWordCloud(summaryText) {
+            if (!document.getElementById("word-cloud")) return;
+
+            const wordData = summaryText.split(/\s+/).reduce((acc, word) => {
+                word = word.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                if (word.length > 3) acc[word] = (acc[word] || 0) + 1;
+                return acc;
+            }, {});
+
+            const stopwords = ["a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for",
+                "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "also",
+                "to", "from", "up", "upon", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then",
+                "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most",
+                "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "say",
+                "says", "said", "shall", "i", "me", "my", "myself", "we", "us", "our", "ours", "ourselves", "you", "your",
+                "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it",
+                "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "whose",
+                "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has",
+                "had", "having", "do", "does", "did", "doing", "will", "would", "should", "can", "could", "ought", "i'm",
+                "you're", "he's", "she's", "it's", "we're", "they're", "i've", "you've", "we've", "they've", "i'd", "you'd",
+                "he'd", "she'd", "we'd", "they'd", "i'll", "you'll", "he'll", "she'll", "we'll", "they'll", "isn't", "aren't",
+                "wasn't", "weren't", "hasn't", "haven't", "hadn't", "doesn't", "don't", "didn't", "won't", "wouldn't",
+                "shan't", "shouldn't", "can't", "cannot", "couldn't", "mustn't", "let's", "that's", "who's", "what's",
+                "here's", "there's", "when's", "where's", "why's", "how's", "ones", "aims", "tries", "kind", "study", "used", "uses"];
+
+            const filteredWords = Object.entries(wordData)
+                .filter(([word]) => !stopwords.includes(word))
+                .map(([word, count]) => ({
+                    text: word,
+                    size: count * 10 
+                }));
+            
+            if (filteredWords.length === 0) { // Handle empty summary or all stopwords
+                 document.getElementById("word-cloud").innerHTML = "<p style='color:white; text-align:center; padding-top:20px;'>No significant words found for cloud.</p>";
+                 document.getElementById("word-cloud").style.display = "block";
+                 showPersonalizeButton();
+                 return;
+            }
+
+
+            const maxSize = Math.max(...filteredWords.map(d => d.size));
+            const minSize = Math.min(...filteredWords.map(d => d.size));
+
+            filteredWords.forEach(d => {
+                if (maxSize === minSize) { // Avoid division by zero if all words have same frequency
+                    d.size = 30; // Default size
+                } else {
+                    d.size = Math.floor(((d.size - minSize) / (maxSize - minSize)) * 50 + 15); // Adjusted scale for better visuals: 15 to 65
+                }
+            });
+
+            const cloudContainer = document.getElementById("word-cloud");
+            const width = cloudContainer.clientWidth; 
+            const height = cloudContainer.clientHeight;
+
+            const color = d3.scaleOrdinal(d3.schemeCategory10); // Using a standard D3 color scheme
+
+            const layout = d3.layout.cloud()
+                .size([width, height])
+                .words(filteredWords)
+                .padding(5) // Reduced padding for denser cloud
+                .rotate(() => (Math.random() > 0.7 ? 0 : (~~(Math.random() * 2) * 90)) ) // More horizontal, some vertical
+                .font("Segoe UI")
+                .fontSize(d => d.size) // Use calculated size directly
+                .on("end", draw);
+
+            layout.start();
+
+            function draw(words) {
+                cloudContainer.innerHTML = ""; // Clear previous
+                cloudContainer.style.display = "block";
+                d3.select("#word-cloud")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", `translate(${width / 2},${height / 2})`)
+                    .selectAll("text")
+                    .data(words)
+                    .enter()
+                    .append("text")
+                    .style("font-size", d => `${d.size}px`)
+                    .style("font-family", "Segoe UI")
+                    .style("fill", (d, i) => color(i))
+                    .attr("text-anchor", "middle")
+                    .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`)
+                    .text(d => d.text);
+            }
+            showPersonalizeButton();
+        }
+        
+        //-----------------------RESIZE-----------------------------
+        const resizableElements = [
+            { containerId: 'iframe-container', handlerId: 'resize-handler' },
+            // Add other resizable elements here if needed, e.g., for #configurational if it gets a handler
+            // { containerId: 'configurational', handlerId: 'resize-handler-config' } 
+        ];
+
+        resizableElements.forEach(config => {
+            const element = document.getElementById(config.containerId);
+            const resizeHandler = document.getElementById(config.handlerId);
+
+            if (!element || !resizeHandler) return;
+
+            let startX, startY, startWidth, startHeight;
+
+            resizeHandler.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = element.offsetWidth;
+                startHeight = element.offsetHeight;
+
+                document.addEventListener("mousemove", onMouseMove);
+                document.addEventListener("mouseup", onMouseUp);
+            });
+
+            function onMouseMove(e) {
+                // Calculate change from the bottom-left corner
+                const newWidth = startWidth - (e.clientX - startX);
+                const newHeight = startHeight + (e.clientY - startY);
+
+                // Apply constraints if necessary (e.g., min-width, min-height)
+                element.style.width = Math.max(150, newWidth) + "px";  // Min width 150px
+                element.style.height = Math.max(100, newHeight) + "px"; // Min height 100px
+
+                 // Adjust iframe height within if it's the #iframe-container
+                if (element.id === 'iframe-container') {
+                    const iframes = element.querySelectorAll('iframe');
+                    iframes.forEach(iframe => {
+                        iframe.style.height = `calc(${element.style.height} - 20px)`; // Assuming handler height is 20px
+                    });
+                }
+            }
+
+            function onMouseUp() {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+            }
+        });
+
+    </script>
+</body>
+
+</html>

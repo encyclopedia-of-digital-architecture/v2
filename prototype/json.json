@@ -1,0 +1,97 @@
+{
+  "name": "URBAN-SOCIAL-PLANNING",
+  "children": [
+    {
+      "name": "HUMAN-SOCIAL-COGNITIVE-PARTICIPATION",
+      "children": [
+        {
+          "name": "HUMAN",
+          "children": [
+            {
+              "name": "ROBOT",
+              "children": [
+                {
+                  "name": "COLLABORATION",
+                  "children": [
+                    {
+                      "name": "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure",
+                      "value": 1000,
+                      "keywords": "MACHINE VISION, CYBER-PHYSICAL SYSTEMS, INTERNET OF THINGS, ROBOTIC FABRICATION, HUMAN ROBOT COLLABORATION, SENSATE SYSTEMS",
+                      "summary": "In this paper, we describe an interdisciplinary project and live-exhibit that investigated whether untrained humans and robots could work together collaboratively towards the common goal of building a large-scale structure composed out of robotically fabricated modules using a filament winding process. We describe the fabrication system and exhibition setup, including a custom end effector and tension control mechanism, as well as a collaborative fabrication process in which instructions delivered via wearable devices enable the trade-off of production and assembly tasks between human and robot. We describe the necessary robotic developments that facilitated a live fabrication process, including a generic robot inverse kinematic solver engine for non-spherical wrist robots, and wireless network communication connecting hardware and software. In addition, we discuss computational strategies for the fiber syntax generation and robotic motion planning which mitigated constraints such as reachability, axis limitations, and collisions, and ensured predictable and therefore safe motion in a live exhibition setting. We discuss the larger implications of this project as a case study for handling deviations due to non-standardized materials or human error, as well as a means to reconsider the fundamental separation of human and robotic tasks in a production workflow. Most significantly, the project exemplifies a hybrid domain of human and robot collaboration in which coordination and communication between robots, people, and devices can enhance the integration of robotic processes and computational control into the characteristic processes of construction.",
+                      "children": [
+                        {
+                          "name": "Conceptual Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Procedural Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Visual Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Configurational Knowledge",
+                          "value": 150
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Collaborative Robotic Masonry and Early Stage Fatigue Prediction",
+                      "value": 1000,
+                      "keywords": "INTERACTIVE ROBOTIC FABRICATION, HUMAN ROBOT COLLABORATION, FATIGUE AND POSE ESTIMATION, MASONRY",
+                      "summary": "The nature of craft has often been dictated by the type and nature of the tool. The authors intend to establish a new relationship between a mechanically articulated tool and a human through the development a symbiotic relationship between them. This study attempts to develop and deploy a framework for collaborative robotic masonry involving one mason and one industrial robotic arm. This study aims to study the harmful posture and muscular stress developed during the construction work and involve a robotic arm to aid the mason to reduce the cumulative damage to one's body. Through utilization of RGBD sensors and surface electromyography procedure the study develops a framework that distributes the task between the mason and robot. The kinematics and electromyography detects the fatigue and harmful postures and activates the robot to collaborate with the mason in the process.",
+                      "children": [
+                        {
+                          "name": "Conceptual Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Procedural Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Visual Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Configurational Knowledge",
+                          "value": 150
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Designing with a Robot - Interactive methods for brick wall design using computer vision",
+                      "value": 1000,
+                      "keywords": "INTERACTIVE ROBOTIC FABRICATION, HUMAN ROBOT COLLABORATION, COMPUTER VISION, MASONRY, MACHINE LEARNING",
+                      "summary": "The deterministic and linear nature of robotic processes in architectural construction often allows no or very little adjustments during the fabrication process. If any need for modification arise the process is usually interrupted, changes are accommodated, and the process is resumed or restarted. The rigidity in this fabrication process leaves little room for creative intervention and human activities and robotic process are often considered as two segregated processes.The paper will present and discuss the methodological and design challenges of interactive robotic fabrication of brickwork with an industrial robotic arm, a webcam and bricks with varying color tones. Emphasis will be on the integration of external computer vision libraries within Rhino Grasshopper to augment the interactive robotic process. The paper will describe and demonstrate a framework comprising (1) robotic pick and place, material selection and evaluation using computer vision, (2) interactive robotic actuation and (3) the role of human input during a probabilistic fabrication-based design process.",
+                      "children": [
+                        {
+                          "name": "Conceptual Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Procedural Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Visual Knowledge",
+                          "value": 150
+                        },
+                        {
+                          "name": "Configurational Knowledge",
+                          "value": 150
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

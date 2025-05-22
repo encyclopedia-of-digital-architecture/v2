@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunburst Visualization v3</title> <!-- Updated title -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        #word-cloud {
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 0px;
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            overflow: hidden;
+            display: none;
+            z-index: 1010;
+            background-color: #638DB6;
+        }
+
+        #visual-knowledge {
+            font-family: "Segoe UI", sans-serif;
+            border: 1px solid #005599;
+            padding: 15px;
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: none;
+            z-index: 1010;
+            background-color: #638DB6;
+            text-align: center;
+            overflow-y: scroll;
+            scrollbar-width: thin;
+            scrollbar-color: #688cbc #f0f0f0;
+        }
+
+        #visual-knowledge img {
+             max-width: 100%;
+             height: auto;
+             margin-top: 10px;
+             border-radius: 8px;
+        }
+
+        #visual-knowledge::-webkit-scrollbar { width: 8px; }
+        #visual-knowledge::-webkit-scrollbar-track { background: #f0f0f0; }
+        #visual-knowledge::-webkit-scrollbar-thumb { background: #688cbc; border-radius: 4px; }
+        #visual-knowledge::-webkit-scrollbar-thumb:hover { background: #5a7ca6; }
+
+
+        #iframe-container {
+            padding: 0px;
+            width: 30vw;
+            height: 88vh;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: none;
+            transform-origin: bottom left;
+            border: 1px solid #005599;
+            z-index: 1010;
+            background-color: white;
+        }
+
+        #resize-handler {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(19, 95, 182, 0.7);
+            cursor: nwse-resize;
+            border-radius: 0px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            z-index: 1011;
+        }
+        #resize-handler:hover { background-color: rgba(0, 0, 0, 0.9); transform: scale(1.2); }
+
+        #iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        #configurational {
+            padding: 0px;
+            width: 80vw;
+            height: 95vh;
+            position: fixed; /* Changed to fixed */
+            top: 10px;
+            right: 10px;
+            display: none;
+            border: 1px solid #005599;
+            z-index: 1010;
+            background-color: white;
+            overflow: hidden; /* Prevent scrollbars on container */
+        }
+        #configurational iframe {
+             width: 100%;
+             height: 100%;
+             border: none;
+             display: none;
+        }
+
+
+        .sunburst-container {
+            margin-left: 1%;
+            font-family: "Segoe UI", sans-serif;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+        }
+
+        /* --- Dropdown Menu Styles --- */
+        .nav-item.dropdown {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            display: none;
+            z-index: 1020;
+        }
+
+        #navbarDropdown {
+            color: #005599;
+            background-color: #f8f9fa;
+            border: 1px solid #005599;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+        }
+         #navbarDropdown:hover { background-color: #e2e6ea; }
+         #navbarDropdown i { color: #005599; margin-right: 5px; }
+
+        .dropdown-menu-up {
+            top: auto !important;
+            bottom: 100%;
+            margin-bottom: 5px;
+            border-radius: 0.25rem;
+            border: 1px solid #ccc;
+        }
+         .dropdown-item { border-radius: 0; }
+         .dropdown-item:hover { background-color: #f8f9fa; }
+
+        #customTooltip { /* MUST exist in HTML */
+            position: absolute;
+            display: none;
+            background-color: rgba(0, 85, 153, 0.9); /* Slightly more opaque */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: "Segoe UI", sans-serif;
+            pointer-events: none; /* Crucial */
+            z-index: 1100;
+            max-width: 250px;
+            white-space: normal;
+            border: 1px solid #eee; /* Optional border */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sunburst-container" id="sunburst-chart"></div>
+
+    <!-- Content Panels -->
+    <div id="word-cloud"></div>
+    <div id="visual-knowledge"></div>
+    <div id="iframe-container">
+        <div id="resize-handler"></div>
+        <iframe id="collaborative-iframe" title="Collaborative Flowchart"></iframe>
+        <iframe id="arobot-iframe" title="Arobot Flowchart"></iframe>
+        <iframe id="adaptive-iframe" title="Adaptive Flowchart"></iframe>
+    </div>
+    <div id="configurational">
+        <iframe id="collaborative-iframe2" title="Collaborative Configurational"></iframe>
+        <iframe id="arobot-iframe2" title="Arobot Configurational"></iframe>
+        <iframe id="adaptive-iframe2" title="Adaptive Configurational"></iframe>
+    </div>
+
+    <!-- Custom Tooltip -->
+    <div id="customTooltip"></div> <!-- Ensure this DIV exists -->
+
+    <!-- Personalize Dropdown -->
+    <nav class="navbar navbar-light">
+      <ul class="navbar-nav ml-auto">
+          <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="fas fa-edit"></i> Personalize
+              </a>
+              <div class="dropdown-menu dropdown-menu-up" aria-labelledby="navbarDropdown">
+                  <a class="dropdown-item" href="#">Download</a>
+                  <a class="dropdown-item" href="#">Add a Feature</a>
+                  <a class="dropdown-item" href="#">Add to Favorites</a>
+              </div>
+          </li>
+      </ul>
+    </nav>
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // --- Get References to Elements ---
+            const wordCloudContainer = document.getElementById("word-cloud");
+            const visualKnowledgeContainer = document.getElementById("visual-knowledge");
+            const iframeContainer = document.getElementById("iframe-container");
+            const configurationalContainer = document.getElementById("configurational");
+            const personalizeButtonContainer = document.querySelector('.nav-item.dropdown');
+            const customTooltipElement = document.getElementById('customTooltip'); // Use a different name to avoid potential conflicts
+
+            // --- Check if tooltip element exists ---
+             if (!customTooltipElement) {
+                 console.error("CRITICAL: Tooltip element with ID 'customTooltip' not found in the DOM!");
+                 // You might want to disable tooltip functionality entirely here
+             } else {
+                 console.log("Tooltip element found:", customTooltipElement);
+             }
+
+
+            const collaborativeIframe = document.getElementById('collaborative-iframe');
+            const arobotIframe = document.getElementById('arobot-iframe');
+            const adaptiveIframe = document.getElementById('adaptive-iframe');
+            const collaborativeIframe2 = document.getElementById('collaborative-iframe2');
+            const arobotIframe2 = document.getElementById('arobot-iframe2');
+            const adaptiveIframe2 = document.getElementById('adaptive-iframe2');
+
+            // --- Helper Functions ---
+            function showElement(element) {
+                if (element) element.style.display = 'block';
+            }
+
+            function hideElement(element) {
+                if (element) element.style.display = 'none';
+            }
+
+            function clearAndHideElement(element) {
+                 if (element) {
+                    element.innerHTML = '';
+                    hideElement(element); // Use hideElement function
+                 }
+            }
+
+             function hideAllContentPanels() {
+                 hideElement(wordCloudContainer);
+                 hideElement(visualKnowledgeContainer);
+                 hideElement(iframeContainer);
+                 hideElement(configurationalContainer);
+                 hideElement(personalizeButtonContainer);
+
+                 // Stop loading iframes
+                 const iframes = [
+                     collaborativeIframe, arobotIframe, adaptiveIframe,
+                     collaborativeIframe2, arobotIframe2, adaptiveIframe2
+                 ];
+                 iframes.forEach(iframe => {
+                     if (iframe) {
+                         iframe.src = 'about:blank';
+                         hideElement(iframe); // Also hide the iframe element itself
+                     }
+                 });
+
+                 // Explicitly clear potentially remaining content
+                 if (wordCloudContainer) wordCloudContainer.innerHTML = '';
+                 if (visualKnowledgeContainer) visualKnowledgeContainer.innerHTML = '';
+
+             }
+
+            // --- Content Display Functions ---
+
+            function showWordCloud(summaryText) {
+                if (!wordCloudContainer) return; // Safety check
+                generateWordCloud(summaryText); // Assumes this function handles showing the container
+                showElement(personalizeButtonContainer);
+            }
+
+            function showProcedural(iframeElement, srcUrl) {
+                if (!iframeContainer || !iframeElement) return; // Safety check
+                 // Hide others in the same container
+                 hideElement(collaborativeIframe);
+                 hideElement(arobotIframe);
+                 hideElement(adaptiveIframe);
+
+                 iframeElement.src = srcUrl;
+                 showElement(iframeElement); // Show the specific iframe
+                 showElement(iframeContainer); // Show the container
+                 showElement(personalizeButtonContainer);
+            }
+
+            function showVisual(imageSrc, altText) {
+                 if (!visualKnowledgeContainer) return; // Safety check
+                 visualKnowledgeContainer.innerHTML = ''; // Clear previous
+                 const image = document.createElement('img');
+                 image.src = imageSrc;
+                 image.alt = altText;
+                 visualKnowledgeContainer.appendChild(image);
+                 showElement(visualKnowledgeContainer);
+                 showElement(personalizeButtonContainer);
+            }
+
+             function showConfigurational(iframeElement, srcUrl) {
+                 if (!configurationalContainer || !iframeElement) return; // Safety check
+                 // Hide others in the same container
+                 hideElement(collaborativeIframe2);
+                 hideElement(arobotIframe2);
+                 hideElement(adaptiveIframe2);
+
+                 iframeElement.src = srcUrl;
+                 showElement(iframeElement); // Show the specific iframe
+                 showElement(configurationalContainer); // Show the container
+                 showElement(personalizeButtonContainer);
+             }
+
+            // --- Sunburst Chart Logic ---
+            fetch('json.json') // Ensure json.json is accessible
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    // Pass the tooltip element reference to the chart function
+                    const svg = createSunburstChart(data, customTooltipElement);
+                    if (svg) { // Only append if chart creation was successful
+                         document.getElementById('sunburst-chart').appendChild(svg);
+                    } else {
+                        console.error("Failed to create Sunburst chart SVG element.");
+                        return; // Stop further processing if SVG failed
+                    }
+
+
+                    // Add click listener to the SVG container
+                    svg.addEventListener('click', function (event) {
+                        const clickedElement = event.target;
+                        if (clickedElement.tagName !== 'path' && clickedElement.tagName !== 'circle') return;
+
+                        const clickedNode = clickedElement.__data__;
+                        if (!clickedNode || !clickedNode.data) return; // Check data exists
+
+                        hideAllContentPanels(); // Clear stage on every click
+
+                        const nodeName = clickedNode.data.name;
+                        if (!nodeName) return; // Exit if node has no name
+
+                        // Find the relevant ancestor project name
+                        let projectName = null;
+                        let searchNode = clickedNode;
+                        while (searchNode && searchNode.depth > 0) {
+                             const name = searchNode.data.name;
+                            if (name === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction" ||
+                                name === "Designing with a Robot - Interactive methods for brick wall design using computer vision" ||
+                                name === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                projectName = name;
+                                break;
+                            }
+                            searchNode = searchNode.parent;
+                         }
+
+                        // Show Content Based on Clicked Node Type
+                        switch (nodeName) {
+                            case "Conceptual Knowledge":
+                                let summaryNode = clickedNode;
+                                let summaryFound = false;
+                                 while (summaryNode) {
+                                     if (summaryNode.data && summaryNode.data.summary) {
+                                         showWordCloud(summaryNode.data.summary);
+                                         summaryFound = true;
+                                         break;
+                                     }
+                                     summaryNode = summaryNode.parent;
+                                 }
+                                  if (!summaryFound) console.warn("No summary found for Conceptual Knowledge node or its ancestors.");
+                                break;
+
+                            case "Procedural Knowledge":
+                                if (projectName === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showProcedural(collaborativeIframe, 'collaborative-flowchart.html');
+                                } else if (projectName === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showProcedural(arobotIframe, 'arobot-flowchart.html');
+                                } else if (projectName === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showProcedural(adaptiveIframe, 'adaptive-flowchart.html');
+                                } else {
+                                    console.warn("Procedural Knowledge clicked, but no matching project found.");
+                                }
+                                break;
+
+                            case "Visual Knowledge":
+                                if (projectName === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showVisual('../images-visual/collaborative.jpg', 'Collaborative Image');
+                                } else if (projectName === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showVisual('../images-visual/arobot.jpg', 'Arobot Image');
+                                } else if (projectName === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showVisual('../images-visual/adaptive.jpg', 'Adaptive Image');
+                                } else {
+                                     console.warn("Visual Knowledge clicked, but no matching project found.");
+                                }
+                                break;
+
+                            case "Configurational Knowledge":
+                                 if (projectName === "Collaborative Robotic Masonry and Early Stage Fatigue Prediction") {
+                                    showConfigurational(collaborativeIframe2, 'collaborative-configurational.html');
+                                } else if (projectName === "Designing with a Robot - Interactive methods for brick wall design using computer vision") {
+                                    showConfigurational(arobotIframe2, 'arobot-configurational.html');
+                                } else if (projectName === "Collaborative Construction: Human and Robotic Collaboration Enabling the Fabrication and Assembly of a Filament-Wound Structure") {
+                                    showConfigurational(adaptiveIframe2, 'adaptive-configurational.html');
+                                } else {
+                                    console.warn("Configurational Knowledge clicked, but no matching project found.");
+                                }
+                                break;
+
+                            default:
+                                // Clicked on a project node or other - do nothing specific
+                                break;
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading or processing sunburst data:", error);
+                });
+
+
+            // --- Sunburst Chart Creation Function (now accepts tooltipEl) ---
+            function createSunburstChart(data, tooltipEl) { // Accept tooltipEl as argument
+                // --- Basic checks ---
+                if (!data) {
+                    console.error("createSunburstChart: No data provided.");
+                    return null; // Return null if no data
+                }
+                if (!tooltipEl) {
+                     console.warn("createSunburstChart: Tooltip element not provided. Tooltips will be disabled.");
+                     // Tooltips will simply not work if element is missing
+                }
+
+
+                const width = 600;
+                const height = width;
+                const radius = width / 6;
+
+                // Define custom colors
+                 const colorScale = d3.scaleOrdinal()
+                    .domain(data.children ? data.children.map(d => d.name) : []) // Handle case where data has no children
+                    .range(["#003366", "#005599", "#3385cc", "#66a3d9", "#99c2e6"]);
+
+                const hierarchy = d3.hierarchy(data)
+                    .sum(d => d.value || 1) // Use 1 if value is missing/falsy
+                    .sort((a, b) => (b.value || 1) - (a.value || 1));
+
+                const root = d3.partition()
+                    .size([2 * Math.PI, Math.max(1, hierarchy.height + 1)]) // Ensure height >= 1
+                    (hierarchy);
+
+                root.each(d => d.current = d);
+
+                const arc = d3.arc()
+                    .startAngle(d => d.x0)
+                    .endAngle(d => d.x1)
+                    .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                    .padRadius(radius * 1.5)
+                    .innerRadius(d => d.y0 * radius)
+                    .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+                const svg = d3.create("svg")
+                    .attr("viewBox", [-width / 2, -height / 2, width, width])
+                    .style("font", "10px sans-serif")
+                    .style("font-family", "Segoe UI")
+                    .attr("width", width)
+                    .attr("height", height);
+
+                let activePath = null;
+
+                const path = svg.append("g")
+                    .selectAll("path")
+                    .data(root.descendants().slice(1))
+                    .join("path")
+                    .attr("fill", d => {
+                         let ancestor = d;
+                         while (ancestor.depth > 1 && ancestor.parent) { // Add parent check
+                             ancestor = ancestor.parent;
+                         }
+                         // Use root's name if no other ancestor found (depth 1)
+                         return colorScale(ancestor.data ? ancestor.data.name : (root.data ? root.data.name : 'default'));
+                    })
+                    .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.7 : 0.5) : 0)
+                    .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+                    .attr("d", d => arc(d.current))
+                    .style("cursor", "pointer")
+                    .on("mouseenter", function (event, d) {
+                         if (activePath !== this) {
+                             d3.select(this).attr("fill-opacity", arcVisible(d.current) ? 0.9 : 0);
+                         }
+                         if (tooltipEl) { // Check if tooltip element exists before using
+                            const hierarchyNames = d.ancestors().reverse().map(node => node.data.name).slice(1);
+                            tooltipEl.style.display = "block";
+                            tooltipEl.innerHTML = hierarchyNames.join(" > "); // Use > for >
+                         }
+                     })
+                     .on("mousemove", function(event) {
+                          if (tooltipEl) { // Check if tooltip element exists
+                             tooltipEl.style.left = (event.pageX + 10) + "px";
+                             tooltipEl.style.top = (event.pageY + 10) + "px";
+                          }
+                     })
+                    .on("mouseleave", function (event, d) {
+                         if (activePath !== this) {
+                            d3.select(this).attr("fill-opacity", arcVisible(d.current) ? (d.children ? 0.7 : 0.5) : 0);
+                         }
+                          if (tooltipEl) { // Check if tooltip element exists
+                              tooltipEl.style.display = "none";
+                          }
+                    })
+                    .on("click", function(event, d) {
+                        // Click logic handled by SVG listener, but manage active state here
+                         if (activePath && activePath !== this) {
+                            d3.select(activePath).dispatch('mouseleave'); // Reset previous active
+                         }
+                         activePath = this;
+                         d3.select(this).attr("fill-opacity", arcVisible(d.current) ? 0.9 : 0); // Highlight clicked
+
+                         // Prevent zoom if needed, or call zoom function:
+                         // clickedZoom(event, d); // Example call
+                    });
+
+                const label = svg.append("g")
+                    .attr("pointer-events", "none")
+                    .attr("text-anchor", "middle")
+                    .style("user-select", "none")
+                    .selectAll("text")
+                    .data(root.descendants().slice(1))
+                    .join("text")
+                    .attr("dy", "0.35em")
+                    .attr("fill-opacity", d => +labelVisible(d.current))
+                    .attr("transform", d => labelTransform(d.current))
+                    .text(d => (d.data.name && d.data.name.length > 15) ? d.data.name.slice(0, 12) + "..." : d.data.name);
+
+
+                const parentCircle = svg.append("circle") // Renamed variable
+                    .datum(root)
+                    .attr("r", radius)
+                    .attr("fill", "none")
+                    .attr("pointer-events", "all")
+                    .style("cursor", "pointer")
+                    .on("click", (event, p) => {
+                          // Reset active path styling if center is clicked
+                          if (activePath) {
+                             d3.select(activePath).dispatch('mouseleave');
+                             activePath = null;
+                          }
+                         // Optional: Zoom out to root
+                         // clickedZoom(event, p); // Example call
+                    });
+
+
+                // --- Optional Zoom Function --- (Keep commented if not needed)
+                /*
+                function clickedZoom(event, p) {
+                     parentCircle.datum(p.parent || root);
+                     root.each(d => d.target = {
+                         x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                         x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+                         y0: Math.max(0, d.y0 - p.depth),
+                         y1: Math.max(0, d.y1 - p.depth)
+                     });
+                     const t = svg.transition().duration(750);
+                     path.transition(t)
+                         .tween("data", d => { const i = d3.interpolate(d.current, d.target); return t => d.current = i(t); })
+                         .filter(function (d) { return +this.getAttribute("fill-opacity") || arcVisible(d.target); })
+                         .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.7 : 0.5) : 0)
+                         .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+                         .attrTween("d", d => () => arc(d.current));
+                     label.filter(function (d) { return +this.getAttribute("fill-opacity") || labelVisible(d.target); }).transition(t)
+                         .attr("fill-opacity", d => +labelVisible(d.target))
+                         .attrTween("transform", d => () => labelTransform(d.current));
+                 }
+                 */
+
+                // --- Visibility Functions ---
+                function arcVisible(d) {
+                    // Check d and d.current exist and have properties
+                    return d && d.y1 != null && d.y0 != null && d.x1 != null && d.x0 != null &&
+                           d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+                }
+
+                function labelVisible(d) {
+                     return d && d.y1 != null && d.y0 != null && d.x1 != null && d.x0 != null &&
+                            d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+                }
+
+                 function labelTransform(d) {
+                     if (!d || d.x0 == null || d.x1 == null || d.y0 == null || d.y1 == null) return ""; // Safety check
+                     const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                     const y = (d.y0 + d.y1) / 2 * radius;
+                     return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+                 }
+
+                return svg.node(); // Return the SVG DOM node
+            } // End createSunburstChart
+
+
+            // --- Word Cloud Generation Function ---
+            function generateWordCloud(summaryText) {
+                 if (!wordCloudContainer || !summaryText) {
+                     clearAndHideElement(wordCloudContainer);
+                     return;
+                 }
+
+                 const words = summaryText.match(/\b(\w+)\b/g);
+                 if (!words) {
+                     clearAndHideElement(wordCloudContainer);
+                     return;
+                 }
+
+                 const wordCounts = {};
+                 // Consider making stopwords a const outside the function if used often
+                 const stopwords = new Set(["a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now", "d", "ll", "m", "o", "re", "ve", "y", "ain", "aren", "couldn", "didn", "doesn", "hadn", "hasn", "haven", "isn", "ma", "mightn", "mustn", "needn", "shan", "shouldn", "wasn", "weren", "won", "wouldn", "i", "me", "my", "myself", "we", "us", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "whose", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "would", "should", "could", "ought", "i'm", "you're", "he's", "she's", "it's", "we're", "they're", "i've", "you've", "we've", "they've", "i'd", "you'd", "he'd", "she'd", "we'd", "they'd", "i'll", "you'll", "he'll", "she'll", "we'll", "they'll", "isn't", "aren't", "wasn't", "weren't", "hasn't", "haven't", "hadn't", "doesn't", "don't", "didn't", "won't", "wouldn't", "shan't", "shouldn't", "can't", "cannot", "couldn't", "mustn't", "let's", "that's", "who's", "what's", "here's", "there's", "when's", "where's", "why's", "how's", "also", "using", "used", "based", "within", "system", "systems", "design", "process", "robot", "robotic", "approach", "paper", "study", "results", "method", "methods", "data", "analysis", "performance", "development", "implementation", "evaluation", "application", "architecture", "framework", "model", "models", "example"]);
+
+                 words.forEach(word => {
+                     const lowerWord = word.toLowerCase();
+                     if (lowerWord.length > 2 && !stopwords.has(lowerWord) && isNaN(lowerWord)) {
+                         wordCounts[lowerWord] = (wordCounts[lowerWord] || 0) + 1;
+                     }
+                 });
+
+                 const wordData = Object.entries(wordCounts).map(([text, value]) => ({ text, value }));
+
+                 if (wordData.length === 0) {
+                    clearAndHideElement(wordCloudContainer);
+                    return;
+                 }
+
+                 wordData.sort((a, b) => b.value - a.value);
+                 const topWords = wordData.slice(0, 100);
+
+                 const minSize = 12;
+                 const maxSize = 40;
+                 const countExtent = d3.extent(topWords, d => d.value);
+                 // Handle case where all counts are the same or only one word
+                 const sizeScaleDomain = (countExtent[0] === countExtent[1]) ? [0, countExtent[1]] : countExtent;
+                 const sizeScale = d3.scaleSqrt()
+                                    .domain(sizeScaleDomain)
+                                    .range([minSize, maxSize])
+                                    .clamp(true); // Prevent sizes outside range
+
+                 const layoutWidth = wordCloudContainer.clientWidth || 300; // Fallback width
+                 const layoutHeight = wordCloudContainer.clientHeight || 300; // Fallback height
+
+                 const wordCloudLayout = d3.layout.cloud()
+                     .size([layoutWidth, layoutHeight])
+                     .words(topWords.map(d => ({ text: d.text, size: sizeScale(d.value) || minSize }))) // Ensure size is at least minSize
+                     .padding(5)
+                     .rotate(() => (~~(Math.random() * 6) - 3) * 15)
+                     .font("Segoe UI")
+                     .fontSize(d => d.size)
+                     .on("end", drawWordCloud);
+
+                 wordCloudLayout.start();
+
+                 function drawWordCloud(finalWords) { // Renamed param
+                    wordCloudContainer.innerHTML = ''; // Clear previous
+                    const svg = d3.select(wordCloudContainer)
+                        .append("svg")
+                        .attr("width", layoutWidth)
+                        .attr("height", layoutHeight)
+                        .append("g")
+                        .attr("transform", `translate(${layoutWidth / 2},${layoutHeight / 2})`);
+
+                    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+                    svg.selectAll("text")
+                        .data(finalWords) // Use the words passed by the layout
+                        .enter().append("text")
+                        .style("font-size", d => `${d.size}px`)
+                        .style("font-family", "Segoe UI")
+                        .style("fill", (d, i) => color(i))
+                        .attr("text-anchor", "middle")
+                        .attr("transform", d => `translate(${[d.x || 0, d.y || 0]})rotate(${d.rotate || 0})`) // Add fallbacks for x,y,rotate
+                        .text(d => d.text);
+
+                    showElement(wordCloudContainer); // Show after drawing
+                 }
+             } // End generateWordCloud
+
+
+             // --- Resize Handler Logic ---
+            const resizeHandler = document.getElementById("resize-handler");
+            let isResizing = false; // Flag to track resizing state
+            let startX, startY, startWidth, startHeight;
+
+            if (resizeHandler && iframeContainer) {
+                resizeHandler.addEventListener("mousedown", function (e) {
+                    // Only start resize if click is directly on handler
+                    if (e.target !== resizeHandler) return;
+                    isResizing = true;
+                    e.preventDefault();
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startWidth = iframeContainer.offsetWidth;
+                    startHeight = iframeContainer.offsetHeight;
+                    document.documentElement.style.cursor = 'nwse-resize'; // Change cursor globally
+                    document.addEventListener("mousemove", onMouseMove);
+                    document.addEventListener("mouseup", onMouseUp);
+                });
+
+                function onMouseMove(e) {
+                    if (!isResizing) return; // Only move if resizing
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    const newWidth = startWidth - dx;
+                    const newHeight = startHeight + dy;
+                    iframeContainer.style.width = `${Math.max(200, newWidth)}px`;
+                    iframeContainer.style.height = `${Math.max(150, newHeight)}px`;
+                }
+
+                function onMouseUp(e) {
+                    if (isResizing) {
+                        isResizing = false;
+                        document.documentElement.style.cursor = ''; // Reset global cursor
+                        document.removeEventListener("mousemove", onMouseMove);
+                        document.removeEventListener("mouseup", onMouseUp);
+                    }
+                }
+            } else {
+                 console.warn("Resize handler or iframe container not found.");
+            }
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+
+</html>
